@@ -1,10 +1,10 @@
-'use client'
-import { authClient } from "@/lib/auth-client";
+import type { Metadata } from "next"
+import AdminDashboard from "./admin-dashboard"
+
+export const metadata: Metadata = {
+  title: "Admin",
+}
 
 export default function Page() {
-    const {useSession} = authClient
-  return <div>Admin Page
-
-    <pre>{JSON.stringify(useSession(), null, 2)}</pre>
-  </div>;
+  return <AdminDashboard />
 }
