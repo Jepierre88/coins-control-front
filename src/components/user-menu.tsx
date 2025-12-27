@@ -45,25 +45,6 @@ export function UserMenu() {
             <span className="font-normal text-muted-fg">@cobain</span>
           </MenuHeader>
         </MenuSection>
-
-        <MenuItem href="#dashboard">
-          <Squares2X2Icon />
-          Dashboard
-        </MenuItem>
-        <MenuItem href="#settings">
-          <Cog6ToothIcon />
-          Settings
-        </MenuItem>
-        <MenuItem href="#security">
-          <ShieldCheckIcon />
-          Security
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem>
-          <CommandLineIcon />
-          Command Menu
-        </MenuItem>
-
         <MenuItem href="#contact">
           <LifebuoyIcon />
           Customer Support

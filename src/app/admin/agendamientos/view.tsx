@@ -320,7 +320,7 @@ export default function AgendamientosView() {
         <div>
           <Heading level={1}>Agendamientos</Heading>
           <div className="text-muted-fg text-sm/6">
-            {isSessionLoading ? "Cargando sesión…" : "Listado paginado y ordenado por más reciente"}
+            Listado paginado y ordenado por más reciente
           </div>
         </div>
 

@@ -90,12 +90,6 @@ export default function AppNavbar(props: NavbarProps) {
         <NavbarSpacer />
         <CoinsBuildingSelect />
         <ThemeSwitcher />
-        <Button intent="plain" size="sq-sm" aria-label="Search for products">
-          <MagnifyingGlassIcon />
-        </Button>
-        <Button intent="plain" size="sq-sm" aria-label="Your Bag">
-          <ShoppingBagIcon />
-        </Button>
         <NavbarSeparator className="mr-2.5" />
         <UserMenu />
       </NavbarMobile>
