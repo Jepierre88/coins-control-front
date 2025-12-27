@@ -21,6 +21,7 @@
     "@tailwindcss/postcss": "^4.1.17",
     "axios": "^1.13.2",
     "better-auth": "^1.4.9",
+    "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "motion": "^12.23.26",
     "next": "^16.0.1",

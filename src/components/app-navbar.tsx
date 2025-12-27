@@ -20,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { UserMenu } from "@/components/user-menu"
 import CoinsBuildingSelect from "@/components/coins/coins-building-select.component"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 
 const categories = [
   { id: 1, label: "Electronics", url: "#" },
@@ -77,6 +78,7 @@ export default function AppNavbar(props: NavbarProps) {
         <NavbarSpacer />
         <NavbarSection className="max-md:hidden">
           <CoinsBuildingSelect />
+          <ThemeSwitcher />
           <Button intent="plain" size="sq-sm" aria-label="Search for products">
             <MagnifyingGlassIcon />
           </Button>
@@ -91,6 +93,7 @@ export default function AppNavbar(props: NavbarProps) {
         <NavbarTrigger />
         <NavbarSpacer />
         <CoinsBuildingSelect />
+        <ThemeSwitcher />
         <Button intent="plain" size="sq-sm" aria-label="Search for products">
           <MagnifyingGlassIcon />
         </Button>

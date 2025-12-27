@@ -370,7 +370,7 @@ export default function AdminDashboard() {
                 <CoinsCard>
                   <CoinsCardHeader
                     title="Apartamentos"
-                    description="Cantidad total en el building"
+                    description="Cantidad total en el edificio"
                   />
                   <CoinsCardContent>
                     <div className="text-3xl font-semibold">
