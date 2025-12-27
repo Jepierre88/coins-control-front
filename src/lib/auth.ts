@@ -3,7 +3,9 @@ import { createAuthEndpoint } from "better-auth/api";
 import { bearer } from "better-auth/plugins";
 import { setSessionCookie } from "better-auth/cookies";
 import { ENVIRONTMENT } from "./environment";
-import { AppSession, AppUser } from "@/types/auth-types.entity";
+import { AppSession, AppUser, type Building } from "@/types/auth-types.entity";
+import { ActionResponseEntity } from "@/types/action-response.entity";
+import { getBuildingsByHoldingId } from "@/datasource/coins-control.datasource";
 
 type ExternalLoginResponse = {
   token: string;
@@ -64,6 +66,8 @@ export function buildAppSession(args: {
   userId: string;
   expiresAt: Date;
   externalToken: string;
+  buildings: Building[];
+  selectedBuilding?: Building;
   headers?: Headers;
   now?: Date;
 }): AppSession {
@@ -80,20 +84,27 @@ export function buildAppSession(args: {
     userAgent: args.headers?.get("user-agent") ?? null,
 
     externalToken: args.externalToken,
+    buildings: args.buildings,
+    selectedBuilding: args.selectedBuilding,
   };
 }
 
 export const credentialsSignIn = createAuthEndpoint(
   "/credentials/sign-in",
   { method: "POST" },
-  async (ctx) => {
+  async (ctx): Promise<ActionResponseEntity<AppUser>> => {
     const { identificationNumber, password } = (ctx.body ?? {}) as {
       identificationNumber?: string;
       password?: string;
     };
 
     if (!identificationNumber || !password) {
-      return ctx.json({ error: "Missing identificationNumber/password" }, { status: 400 });
+      return ctx.json({
+        data: undefined,
+        success: false,
+        message: "Identificación y contraseña son requeridos",
+        statusCode: 400,
+      });
     }
 
     const response = await fetch(`${ENVIRONTMENT.BACKEND_URL}/users/login`, {
@@ -104,17 +115,30 @@ export const credentialsSignIn = createAuthEndpoint(
 
     if (!response.ok) {
       const errorData = (await response.json() as ExternalLoginErrorResponse).error?.message;
-      return ctx.json({ error: errorData || 'Login failed' }, { status: response.status });
+      return ctx.json({
+        data: undefined,
+        success: false,
+        message: response.status === 401 ? "Credenciales inválidas" : errorData || "Error al iniciar sesión",
+        statusCode: response.status,
+      });
     }
 
     const data = (await response.json()) as ExternalLoginResponse;
 
     const expiresAt = expiresAtFromJwt(data.token);
     const user: AppUser = buildAppUser(data.user);
+
+    // Fetch buildings using the external token we just obtained.
+    const buildingsRes = await getBuildingsByHoldingId(String(user.holdingId), data.token);
+    const buildings = buildingsRes.success && buildingsRes.data ? buildingsRes.data : [];
+    const selectedBuilding = buildings.length > 0 ? buildings[0] : undefined;
+
     const session: AppSession = buildAppSession({
       userId: user.id,
       expiresAt,
       externalToken: data.token,
+      buildings,
+      selectedBuilding,
       headers: ctx.headers,
     });
 
@@ -122,14 +146,9 @@ export const credentialsSignIn = createAuthEndpoint(
 
     return ctx.json(
       {
-        ok: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          identificationNumber: user.identificationNumber,
-          holdingId: user.holdingId,
-        },
+        data: user,
+        success: true,
+        message: "Inicio de sesión exitoso",
       },
       { status: 200 }
     );

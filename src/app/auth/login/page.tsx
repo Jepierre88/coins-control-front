@@ -6,16 +6,19 @@ import CoinsCard, {
   CoinsCardHeader,
 } from "@/components/coins/coins-card.component";
 import CoinsButton from "@/components/coins/coins-button.component";
-import CoinsForm, { CoinsFormField } from "@/components/coins/coins-form.component";
+import CoinsForm, {
+  CoinsFormField,
+} from "@/components/coins/coins-form.component";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   LoginSchema,
   LoginSchemaType,
 } from "@/core/forms/schemas/login-schema";
-import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { handleLogin } from "@/lib/auth-utils";
+import { ActionResponseEntity } from "@/types/action-response.entity";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,19 +31,18 @@ export default function LoginPage() {
   });
 
   async function onSubmit(data: LoginSchemaType) {
-    console.log("Submitting login form with data:", data);
     try {
-      await authClient.$fetch("/credentials/sign-in", {
-        method: "POST",
-        body: data,
+      const res = await handleLogin({
+        identificationNumber: data.identificationNumber,
+        password: data.password,
       });
 
-      toast.success("Bienvenido");
-      router.push("/");
+      toast.success(res.message);
+      router.push("/admin");
       router.refresh();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Login fallido";
-      toast.error(message);
+    } catch (error: unknown) {
+      const actionError = error as ActionResponseEntity<unknown>;
+      toast.error(actionError?.message || "Error al iniciar sesión");
     }
   }
 
