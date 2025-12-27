@@ -78,7 +78,7 @@ function stateToEsLabel(state?: string | null) {
     case "active":
       return "Activo"
     case "pendingtoactivate":
-      return "Pendiente de activar"
+      return "Pendiente"
     case "created":
       return "Creado"
     case "canceled":

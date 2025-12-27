@@ -1,9 +1,8 @@
 "use client"
-import { ChevronDownIcon, MagnifyingGlassIcon, ShoppingBagIcon } from "@heroicons/react/24/outline"
+import { MagnifyingGlassIcon, ShoppingBagIcon } from "@heroicons/react/24/outline"
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Link } from "@/components/ui/link"
-import { Menu, MenuContent, MenuItem } from "@/components/ui/menu"
 import {
   Navbar,
   NavbarGap,
@@ -82,12 +81,6 @@ export default function AppNavbar(props: NavbarProps) {
         <NavbarSection className="max-md:hidden">
           <CoinsBuildingSelect />
           <ThemeSwitcher />
-          <Button intent="plain" size="sq-sm" aria-label="Search for products">
-            <MagnifyingGlassIcon />
-          </Button>
-          <Button intent="plain" size="sq-sm" aria-label="Your Bag">
-            <ShoppingBagIcon />
-          </Button>
           <Separator orientation="vertical" className="mr-3 ml-1 h-5" />
           <UserMenu />
         </NavbarSection>

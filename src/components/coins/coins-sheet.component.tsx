@@ -76,7 +76,7 @@ function CoinsSheetContent({
         )}
       >
         <Dialog role={role} className="flex max-h-[90vh] flex-col sm:[--gutter:--spacing(6)]">
-          {children}
+          <div className="flex-1 overflow-auto">{children}</div>
           {closeButton && <DialogCloseIcon className="top-2.5 right-2.5" isDismissable />}
         </Dialog>
       </Modal>
@@ -104,11 +104,11 @@ function CoinsSheetContent({
           {/* Drag handle */}
           <motion.div
             onPointerDown={(e) => dragControls.start(e)}
-            className="flex cursor-grab items-center justify-center pb-2 pt-3 active:cursor-grabbing"
+            className="flex shrink-0 cursor-grab items-center justify-center pb-2 pt-3 active:cursor-grabbing"
           >
             <div className="h-1.5 w-12 rounded-full bg-muted-fg/40" />
           </motion.div>
-          {children}
+          <div className="flex-1 overflow-auto">{children}</div>
           {closeButton && <DialogCloseIcon className="top-2.5 right-2.5" isDismissable />}
         </Dialog>
       </Modal>

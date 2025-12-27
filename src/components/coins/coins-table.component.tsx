@@ -86,19 +86,19 @@ export function CoinsTable<TItem extends object>({
             )
           }
 
-          // Default card: muestra todas las columnas como filas
+          // Default card: muestra todas las columnas en grid de 2 columnas
           const visibleColumns = columns.filter(col => !col.hideOnMobile)
 
           return (
             <Card key={id} role="listitem" className="transition-shadow hover:shadow-md">
               <CardContent>
-                <dl className="space-y-2.5">
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   {visibleColumns.map((column) => {
                     const isHeader = column.isRowHeader
                     return (
                       <div
                         key={column.id}
-                        className={isHeader ? "border-b border-muted pb-2.5" : ""}
+                        className={isHeader ? "col-span-2 border-b border-muted pb-2.5" : ""}
                       >
                         <dt className="text-xs font-medium uppercase tracking-wide text-muted-fg">
                           {column.header}
