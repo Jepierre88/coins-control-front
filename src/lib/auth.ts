@@ -1,5 +1,5 @@
 import { betterAuth, Session, User } from "better-auth";
-import { createAuthEndpoint } from "better-auth/api";
+import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
 import { bearer } from "better-auth/plugins";
 import { setSessionCookie } from "better-auth/cookies";
 import { ENVIRONTMENT } from "./environment";
@@ -155,6 +155,63 @@ export const credentialsSignIn = createAuthEndpoint(
   }
 );
 
+export const setSelectedBuilding = createAuthEndpoint(
+  "/session/set-selected-building",
+  { method: "POST" },
+  async (ctx): Promise<ActionResponseEntity<null>> => {
+    const session = await getSessionFromCtx(ctx);
+    if (!session) {
+      return ctx.json({
+        data: null,
+        success: false,
+        message: "No autenticado",
+        statusCode: 401,
+      });
+    }
+
+    const { buildingId } = (ctx.body ?? {}) as { buildingId?: string | number };
+    if (buildingId === undefined || buildingId === null || String(buildingId).trim() === "") {
+      return ctx.json({
+        data: null,
+        success: false,
+        message: "buildingId es requerido",
+        statusCode: 400,
+      });
+    }
+
+    const currentSession = session.session as unknown as AppSession;
+    const buildings = currentSession.buildings ?? [];
+    const next = buildings.find((b) => String(b.id) === String(buildingId));
+
+    if (!next) {
+      return ctx.json({
+        data: null,
+        success: false,
+        message: "El edificio no pertenece a la sesión actual",
+        statusCode: 400,
+      });
+    }
+
+    const updatedSession: AppSession = {
+      ...currentSession,
+      updatedAt: new Date(),
+      selectedBuilding: next,
+    };
+
+    await setSessionCookie(ctx, {
+      session: updatedSession as AppSession,
+      user: session.user as unknown as AppUser,
+    });
+
+    return ctx.json({
+      data: null,
+      success: true,
+      message: "Edificio seleccionado actualizado",
+      statusCode: 200,
+    });
+  },
+);
+
 export const auth = betterAuth({
   session: { cookieCache: { enabled: true, maxAge: 7*24*60*60, strategy: "jwe", refreshCache: true } },
   plugins: [
@@ -162,7 +219,8 @@ export const auth = betterAuth({
     {
       id: "api",
       endpoints: {
-        credentialsSignIn
+        credentialsSignIn,
+        setSelectedBuilding,
       },
     },
   ],

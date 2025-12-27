@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/navbar"
 import { Separator } from "@/components/ui/separator"
 import { UserMenu } from "@/components/user-menu"
+import CoinsBuildingSelect from "@/components/coins/coins-building-select.component"
 
 const categories = [
   { id: 1, label: "Electronics", url: "#" },
@@ -78,6 +79,7 @@ export default function AppNavbar(props: NavbarProps) {
         </NavbarSection>
         <NavbarSpacer />
         <NavbarSection className="max-md:hidden">
+          <CoinsBuildingSelect />
           <Button intent="plain" size="sq-sm" aria-label="Search for products">
             <MagnifyingGlassIcon />
           </Button>
@@ -91,6 +93,7 @@ export default function AppNavbar(props: NavbarProps) {
       <NavbarMobile>
         <NavbarTrigger />
         <NavbarSpacer />
+        <CoinsBuildingSelect />
         <Button intent="plain" size="sq-sm" aria-label="Search for products">
           <MagnifyingGlassIcon />
         </Button>
