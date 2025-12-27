@@ -13,6 +13,44 @@ import {
 import { Card, CardContent } from "@/components/ui/card"
 import { useLoading } from "@/context/loading.context"
 
+// Componentes fuera del render para evitar problemas de hidratación
+function LoadingComponent({ message }: { message?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center p-16 text-center">
+      <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
+      <p className="text-sm text-muted-fg">
+        {message ?? "Cargando datos..."}
+      </p>
+    </div>
+  )
+}
+
+function EmptyStateComponent({ message }: { message?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <svg
+        className="mb-4 h-12 w-12 md:h-16 md:w-16 text-muted"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+        />
+      </svg>
+      <p className="text-sm md:text-base font-medium text-fg">
+        {message ?? "No hay datos disponibles"}
+      </p>
+      <p className="mt-1 text-xs md:text-sm text-muted-fg max-w-xs">
+        Los resultados aparecerán aquí cuando estén disponibles
+      </p>
+    </div>
+  )
+}
+
 export type CoinsTableColumn<TItem extends object> = {
   id: string
   header: React.ReactNode
@@ -65,49 +103,14 @@ export function CoinsTable<TItem extends object>({
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  // Componente de loading
-  const LoadingComponent = () => (
-    <div className="flex flex-col items-center justify-center p-16 text-center">
-      <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
-      <p className="text-sm text-muted-fg">
-        {loadingState ?? "Cargando datos..."}
-      </p>
-    </div>
-  )
-
-  // Componente de estado vacío
-  const EmptyComponent = () => (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <svg
-        className="mb-4 h-12 w-12 md:h-16 md:w-16 text-muted"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-        />
-      </svg>
-      <p className="text-sm md:text-base font-medium text-fg">
-        {emptyState ?? "No hay datos disponibles"}
-      </p>
-      <p className="mt-1 text-xs md:text-sm text-muted-fg max-w-xs">
-        Los resultados aparecerán aquí cuando estén disponibles
-      </p>
-    </div>
-  )
-
   // Vista mobile: cards
   if (isMobile) {
     if (isLoading) {
-      return <LoadingComponent />
+      return <LoadingComponent message={loadingState} />
     }
 
     if (items.length === 0) {
-      return <EmptyComponent />
+      return <EmptyStateComponent message={emptyState} />
     }
 
     return (
@@ -183,7 +186,7 @@ export function CoinsTable<TItem extends object>({
       <TableBody
         items={items}
         renderEmptyState={() => (
-          isLoading ? <LoadingComponent /> : <EmptyComponent />
+          isLoading ? <LoadingComponent message={loadingState} /> : <EmptyStateComponent message={emptyState} />
         )}
       >
         {(item) => {

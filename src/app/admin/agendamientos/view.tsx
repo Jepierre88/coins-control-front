@@ -121,12 +121,19 @@ export default function AgendamientosView() {
   const [total, setTotal] = React.useState(0)
 
   const [error, setError] = React.useState<string | null>(null)
-    const { isLoading: isLoadingContext, setLoading: setLoadingContext } = useLoading()
+  const { isLoading: isLoadingContext, setLoading: setLoadingContext } = useLoading()
 
   const [draftApartmentId, setDraftApartmentId] = React.useState(apartmentId)
   const [draftStartDate, setDraftStartDate] = React.useState(startDate)
   const [draftEndDate, setDraftEndDate] = React.useState(endDate)
   const [draftState, setDraftState] = React.useState(state)
+
+  // Inicializar loading al montar el componente
+  React.useEffect(() => {
+    if (selectedBuildingId) {
+      setLoadingContext('schedulings-table', true)
+    }
+  }, [])
 
   const [debouncedApartmentId] = useDebounce(draftApartmentId, 400)
   const [debouncedStartDate] = useDebounce(draftStartDate, 400)
@@ -164,6 +171,7 @@ export default function AgendamientosView() {
       if (!selectedBuildingId) {
         setItems([])
         setTotal(0)
+        setLoadingContext('schedulings-table', false)
         return
       }
 
