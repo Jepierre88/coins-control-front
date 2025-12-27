@@ -42,15 +42,13 @@ export function GlobalLoader() {
           animation: loading-bar 1.2s ease-in-out infinite;
         }
       `}</style>
-      <div
-        className="fixed top-16 left-0 right-0 z-50 h-1 overflow-hidden"
-        style={{
-          opacity: isLoading ? 1 : 0,
-          transition: "opacity 0.3s ease-in-out",
-        }}
-      >
+      <div className="absolute inset-x-0 -bottom-1 h-1 overflow-hidden z-50">
         <div
           className={`h-full w-full bg-primary ${isLoading ? "loading-bar-animate" : ""}`}
+          style={{
+            opacity: isLoading ? 1 : 0,
+            transition: "opacity 0.3s ease-in-out",
+          }}
         />
       </div>
     </>

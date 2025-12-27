@@ -3,6 +3,7 @@ import { MagnifyingGlassIcon, ShoppingBagIcon } from "@heroicons/react/24/outlin
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Link } from "@/components/ui/link"
+import { GlobalLoader } from "@/components/global-loader"
 import {
   Navbar,
   NavbarGap,
@@ -37,8 +38,9 @@ const categories = [
 export default function AppNavbar(props: NavbarProps) {
   return (
     <NavbarProvider>
-      <Navbar {...props}>
-        <NavbarStart>
+      <div className="relative">
+        <Navbar isSticky {...props}>
+          <NavbarStart>
           <Link
             className="flex items-center gap-x-2 font-medium"
             aria-label="Goto documentation of Navbar"
@@ -85,6 +87,7 @@ export default function AppNavbar(props: NavbarProps) {
           <UserMenu />
         </NavbarSection>
       </Navbar>
+      <GlobalLoader />
       <NavbarMobile>
         <NavbarTrigger />
         <NavbarSpacer />
@@ -93,6 +96,7 @@ export default function AppNavbar(props: NavbarProps) {
         <NavbarSeparator className="mr-2.5" />
         <UserMenu />
       </NavbarMobile>
+      </div>
     </NavbarProvider>
   )
 }
