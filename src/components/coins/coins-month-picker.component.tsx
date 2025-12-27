@@ -2,8 +2,7 @@
 
 import * as React from "react"
 
-import { CalendarDate, type DateValue } from "@internationalized/date"
-import { DatePicker, DatePickerTrigger } from "@/components/ui/date-picker"
+import CoinsSelect from "@/components/coins/coins-select.component"
 
 export type CoinsMonthPickerProps = {
   value: string // YYYY-MM
@@ -14,8 +13,14 @@ export type CoinsMonthPickerProps = {
 }
 
 function parseMonth(value: string): { year: number; month: number } {
-  const [y, m] = value.split("-").map((v) => Number(v))
-  return { year: y, month: m }
+  const [y, m] = (value ?? "").split("-").map((v) => Number(v))
+  const year = Number.isFinite(y) && y > 1900 ? y : new Date().getFullYear()
+  const month = Number.isFinite(m) && m >= 1 && m <= 12 ? m : new Date().getMonth() + 1
+  return { year, month }
+}
+
+function toMonthValue(year: number, month: number) {
+  return `${year}-${String(month).padStart(2, "0")}`
 }
 
 export default function CoinsMonthPicker({
@@ -26,32 +31,45 @@ export default function CoinsMonthPicker({
   label = "Mes",
 }: CoinsMonthPickerProps) {
   const { year, month } = React.useMemo(() => parseMonth(value), [value])
-  const pickerValue = React.useMemo<DateValue>(() => {
-    const safeYear = year || new Date().getFullYear()
-    const safeMonth = month && month >= 1 && month <= 12 ? month : new Date().getMonth() + 1
-    return new CalendarDate(safeYear, safeMonth, 1)
-  }, [year, month])
+
+  const monthOptions = React.useMemo(() => {
+    const formatter = new Intl.DateTimeFormat("es", { month: "long" })
+    return Array.from({ length: 12 }, (_, i) => {
+      const m = i + 1
+      const label = formatter.format(new Date(2020, i, 1))
+      return { value: String(m), label: label.charAt(0).toUpperCase() + label.slice(1) }
+    })
+  }, [])
+
+  const yearOptions = React.useMemo(() => {
+    const current = new Date().getFullYear()
+    const years: { value: string; label: string }[] = []
+    for (let y = current - 5; y <= current + 1; y++) {
+      years.push({ value: String(y), label: String(y) })
+    }
+    return years
+  }, [])
 
   return (
     <div className={className}>
       <div className="text-muted-fg text-sm/6">{label}</div>
-      <div className="mt-1">
-        <DatePicker
-          value={pickerValue}
-          onChange={(next) => {
-            if (!next) return
-            // We only use year-month for filtering; day is ignored.
-            const nextMonth = String(next.month).padStart(2, "0")
-            onChange(`${next.year}-${nextMonth}`)
-          }}
-          isDisabled={disabled}
-          // If supported by react-aria, this keeps the field on month granularity.
-          // Otherwise it's ignored at runtime; TS will tell us if unsupported.
-          // @ts-expect-error - granularity may not include 'month' depending on version.
-          granularity="month"
-        >
-          <DatePickerTrigger className="w-full" />
-        </DatePicker>
+      <div className="mt-1 inline-flex items-center gap-2">
+        <CoinsSelect
+          value={String(month)}
+          onChange={(e) => onChange(toMonthValue(year, Number(e.target.value)))}
+          options={monthOptions}
+          placeholder="Mes"
+          disabled={disabled}
+          className="w-fit"
+        />
+        <CoinsSelect
+          value={String(year)}
+          onChange={(e) => onChange(toMonthValue(Number(e.target.value), month))}
+          options={yearOptions}
+          placeholder="Año"
+          disabled={disabled}
+          className="w-fit"
+        />
       </div>
     </div>
   )

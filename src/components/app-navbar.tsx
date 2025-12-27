@@ -51,19 +51,16 @@ export default function AppNavbar(props: NavbarProps) {
               src="https://design.intentui.com/logo?color=155DFC"
             />
             <span>
-              Intent <span className="text-muted-fg">UI</span>
+              COINS CONTROL
             </span>
           </Link>
         </NavbarStart>
         <NavbarGap />
         <NavbarSection>
-          <NavbarItem href="#" isCurrent>
-            Home
+          <NavbarItem href="/admin" isCurrent>
+            Inicio
           </NavbarItem>
-          <NavbarItem href="#">Shop</NavbarItem>
-          <NavbarItem href="#">Offers</NavbarItem>
-          <NavbarItem href="#">Orders</NavbarItem>
-          <Menu>
+          {/* <Menu>
             <NavbarItem>
               Categories
               <ChevronDownIcon className="col-start-3" />
@@ -75,7 +72,7 @@ export default function AppNavbar(props: NavbarProps) {
                 </MenuItem>
               )}
             </MenuContent>
-          </Menu>
+          </Menu> */}
         </NavbarSection>
         <NavbarSpacer />
         <NavbarSection className="max-md:hidden">

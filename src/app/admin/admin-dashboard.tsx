@@ -1,156 +1,229 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 
-import CoinsBuildingTabs from "@/components/coins/coins-building-tabs.component"
-import CoinsBadge from "@/components/coins/coins-badge.component"
-import CoinsButton from "@/components/coins/coins-button.component"
+import CoinsBuildingTabs from "@/components/coins/coins-building-tabs.component";
+import CoinsBadge from "@/components/coins/coins-badge.component";
+import CoinsButton from "@/components/coins/coins-button.component";
 import CoinsCard, {
   CoinsCardContent,
   CoinsCardDescription,
   CoinsCardFooter,
   CoinsCardHeader,
   CoinsCardTitle,
-} from "@/components/coins/coins-card.component"
-import { Avatar } from "@/components/ui/avatar"
-import { Container } from "@/components/ui/container"
-import { Heading } from "@/components/ui/heading"
-import { Separator } from "@/components/ui/separator"
-import { authClient } from "@/lib/auth-client"
-import { getBuildingDashboardMetricsByMonth, type BuildingDashboardMetrics } from "@/datasource/coins-control.datasource"
-import type { Building } from "@/types/auth-types.entity"
-import CoinsMonthPicker from "@/components/coins/coins-month-picker.component"
-import CoinsBarChart from "@/components/coins/coins-bar-chart.component"
+} from "@/components/coins/coins-card.component";
+import { Avatar } from "@/components/ui/avatar";
+import { Container } from "@/components/ui/container";
+import { Heading } from "@/components/ui/heading";
+import { Separator } from "@/components/ui/separator";
+import { authClient } from "@/lib/auth-client";
+import {
+  getApartmentsCountByBuildingId,
+  getSchedulingsMonthlyCounts,
+  type BuildingDashboardMetrics,
+} from "@/datasource/coins-control.datasource";
+import type { Building } from "@/types/auth-types.entity";
+import CoinsMonthPicker from "@/components/coins/coins-month-picker.component";
+import CoinsBarSeriesChart from "@/components/coins/coins-bar-series-chart.component";
+import CoinsLineChart from "@/components/coins/coins-line-chart.component";
+import CoinsSelect from "@/components/coins/coins-select.component";
+import {
+  CoinsTab,
+  CoinsTabs,
+  CoinsTabsList,
+} from "@/components/coins/coins-tabs.component";
 
 function currentMonthValue(now = new Date()) {
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, "0")
-  return `${y}-${m}`
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
 }
 
 function getInitials(name?: string | null) {
-  if (!name) return ""
-  const parts = name.trim().split(/\s+/g).filter(Boolean)
-  const first = parts[0]?.[0] ?? ""
-  const second = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : ""
-  return (first + second).toUpperCase()
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/g).filter(Boolean);
+  const first = parts[0]?.[0] ?? "";
+  const second = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
+  return (first + second).toUpperCase();
 }
 
 function mask(value?: string | null) {
-  if (!value) return ""
-  if (value.length <= 4) return "••••"
-  return `${value.slice(0, 2)}••••${value.slice(-2)}`
+  if (!value) return "";
+  if (value.length <= 4) return "••••";
+  return `${value.slice(0, 2)}••••${value.slice(-2)}`;
 }
+
+type FilterMode = "month" | "range" | "year";
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[140px_1fr] gap-x-4 gap-y-1">
       <div className="text-muted-fg text-sm/6">{label}</div>
-      <div className="text-sm/6">{value ?? <span className="text-muted-fg">—</span>}</div>
+      <div className="text-sm/6">
+        {value ?? <span className="text-muted-fg">—</span>}
+      </div>
     </div>
-  )
-}
-
-function SelectedBuildingHero({ building }: { building: Building }) {
-  return (
-    <CoinsCard>
-      <CoinsCardHeader>
-        <div className="flex items-center gap-4">
-          <Avatar
-            size="3xl"
-            src={building.urlImage ?? null}
-            alt={building.name}
-            initials={getInitials(building.name)}
-            isSquare
-          />
-          <div className="min-w-0">
-            <CoinsCardTitle className="truncate">{building.name}</CoinsCardTitle>
-            <CoinsCardDescription className="mt-1">
-              {building.address || building.description ? (
-                <span className="line-clamp-2">{building.address || building.description}</span>
-              ) : (
-                "Sin dirección/descrición"
-              )}
-            </CoinsCardDescription>
-          </div>
-        </div>
-      </CoinsCardHeader>
-    </CoinsCard>
-  )
+  );
 }
 
 export default function AdminDashboard() {
-  const { useSession } = authClient
-  const sessionQuery = useSession()
+  const { useSession } = authClient;
+  const sessionQuery = useSession();
 
-  const data = (sessionQuery as any)?.data
-  const session = (data?.session ?? data) as any
-  const isLoading = Boolean((sessionQuery as any)?.isPending ?? (sessionQuery as any)?.isLoading)
-  const error = (sessionQuery as any)?.error
+  const data = (sessionQuery as any)?.data;
+  const session = (data?.session ?? data) as any;
+  const isLoading = Boolean(
+    (sessionQuery as any)?.isPending ?? (sessionQuery as any)?.isLoading
+  );
+  const error = (sessionQuery as any)?.error;
 
-  const buildings: Building[] = session?.buildings ?? []
-  const sessionSelectedBuilding: Building | null = session?.selectedBuilding ?? null
+  const buildings: Building[] = session?.buildings ?? [];
+  const sessionSelectedBuilding: Building | null =
+    session?.selectedBuilding ?? null;
 
-  const [activeBuildingId, setActiveBuildingId] = React.useState<string>("")
+  const [activeBuildingId, setActiveBuildingId] = React.useState<string>("");
 
-  const [month, setMonth] = React.useState<string>(() => currentMonthValue())
-  const [metrics, setMetrics] = React.useState<BuildingDashboardMetrics | null>(null)
-  const [metricsLoading, setMetricsLoading] = React.useState(false)
-  const [metricsError, setMetricsError] = React.useState<string | null>(null)
+  const [month, setMonth] = React.useState<string>(() => currentMonthValue());
+  const [filterMode, setFilterMode] = React.useState<FilterMode>("month");
+  const [rangeStartMonth, setRangeStartMonth] = React.useState<string>(() =>
+    currentMonthValue()
+  );
+  const [rangeEndMonth, setRangeEndMonth] = React.useState<string>(() =>
+    currentMonthValue()
+  );
+  const [year, setYear] = React.useState<number>(() =>
+    new Date().getFullYear()
+  );
+
+  const [metrics, setMetrics] = React.useState<BuildingDashboardMetrics | null>(
+    null
+  );
+  const [seriesPoints, setSeriesPoints] = React.useState<
+    Array<{ label: string; value: number }>
+  >([]);
+  const [metricsLoading, setMetricsLoading] = React.useState(false);
+  const [metricsError, setMetricsError] = React.useState<string | null>(null);
+
+  const yearOptions = React.useMemo(() => {
+    const current = new Date().getFullYear();
+    return [0, 1, 2, 3, 4].map((offset) => {
+      const y = String(current - offset);
+      return { value: y, label: y };
+    });
+  }, []);
+
+  const shouldUseLineChart = !metricsLoading && seriesPoints.length >= 7;
 
   const activeBuildingFromList = React.useMemo(() => {
-    if (!activeBuildingId) return null
-    return buildings.find((b) => String(b.id) === activeBuildingId) ?? null
-  }, [activeBuildingId, buildings])
+    if (!activeBuildingId) return null;
+    return buildings.find((b) => String(b.id) === activeBuildingId) ?? null;
+  }, [activeBuildingId, buildings]);
 
   const selectedBuilding =
     sessionSelectedBuilding &&
-    (!activeBuildingId || String(sessionSelectedBuilding.id) === activeBuildingId)
+    (!activeBuildingId ||
+      String(sessionSelectedBuilding.id) === activeBuildingId)
       ? sessionSelectedBuilding
-      : activeBuildingFromList
+      : activeBuildingFromList;
 
   React.useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     async function run() {
       if (!selectedBuilding?.id) {
-        setMetrics(null)
-        setMetricsError(null)
-        return
+        setMetrics(null);
+        setSeriesPoints([]);
+        setMetricsError(null);
+        return;
       }
 
-      setMetricsLoading(true)
-      setMetricsError(null)
+      setMetricsLoading(true);
+      setMetricsError(null);
 
       try {
-        const res = await getBuildingDashboardMetricsByMonth({
-          buildingId: selectedBuilding.id,
-          month,
-        })
-
-        if (cancelled) return
-
-        if (!res.success || !res.data) {
-          setMetrics(null)
-          setMetricsError(res.message || "No se pudieron cargar las métricas")
-          return
+        if (filterMode === "range" && rangeStartMonth > rangeEndMonth) {
+          setMetrics(null);
+          setSeriesPoints([]);
+          setMetricsError("El mes de inicio debe ser menor o igual al mes fin");
+          return;
         }
 
-        setMetrics(res.data)
+        const [apartmentsRes, monthlyRes] = await Promise.all([
+          getApartmentsCountByBuildingId(selectedBuilding.id),
+          getSchedulingsMonthlyCounts(
+            filterMode === "year"
+              ? { buildingId: selectedBuilding.id, year }
+              : filterMode === "range"
+              ? {
+                  buildingId: selectedBuilding.id,
+                  startMonth: rangeStartMonth,
+                  endMonth: rangeEndMonth,
+                }
+              : {
+                  buildingId: selectedBuilding.id,
+                  startMonth: month,
+                  endMonth: month,
+                }
+          ),
+        ]);
+
+        if (cancelled) return;
+
+        if (!apartmentsRes.success) {
+          setMetrics(null);
+          setSeriesPoints([]);
+          setMetricsError(
+            apartmentsRes.message || "No se pudieron cargar las métricas"
+          );
+          return;
+        }
+
+        if (!monthlyRes.success || !monthlyRes.data) {
+          setMetrics(null);
+          setSeriesPoints([]);
+          setMetricsError(
+            monthlyRes.message || "No se pudieron cargar las métricas"
+          );
+          return;
+        }
+
+        const points = monthlyRes.data.items.map((it) => ({
+          label: it.month,
+          value: it.count,
+        }));
+        const total = monthlyRes.data.items.reduce(
+          (acc, it) => acc + (it.count ?? 0),
+          0
+        );
+
+        setSeriesPoints(points);
+        setMetrics({
+          apartmentsCount: apartmentsRes.data ?? 0,
+          schedulingsCount: total,
+          range: monthlyRes.data.range,
+        });
       } catch {
-        if (cancelled) return
-        setMetrics(null)
-        setMetricsError("No se pudieron cargar las métricas")
+        if (cancelled) return;
+        setMetrics(null);
+        setSeriesPoints([]);
+        setMetricsError("No se pudieron cargar las métricas");
       } finally {
-        if (cancelled) return
-        setMetricsLoading(false)
+        if (cancelled) return;
+        setMetricsLoading(false);
       }
     }
 
-    run()
+    run();
     return () => {
-      cancelled = true
-    }
-  }, [selectedBuilding?.id, month])
+      cancelled = true;
+    };
+  }, [
+    selectedBuilding?.id,
+    month,
+    filterMode,
+    rangeStartMonth,
+    rangeEndMonth,
+    year,
+  ]);
 
   return (
     <Container className="py-8" constrained>
@@ -161,8 +234,8 @@ export default function AdminDashboard() {
             {isLoading
               ? "Cargando sesión…"
               : selectedBuilding
-                ? "Dashboard del building seleccionado"
-                : "Selecciona un building para ver su dashboard"}
+              ? "Dashboard del edificio seleccionado"
+              : "Selecciona un edificio para ver su dashboard"}
           </div>
         </div>
 
@@ -189,10 +262,14 @@ export default function AdminDashboard() {
 
       {!error && !isLoading && !selectedBuilding ? (
         <CoinsCard>
-          <CoinsCardHeader title="Sin building seleccionado" description="Elige uno para ver información y estado." />
+          <CoinsCardHeader
+            title="Sin building seleccionado"
+            description="Elige uno para ver información y estado."
+          />
           <CoinsCardContent className="space-y-4">
             <div className="text-sm/6">
-              Buildings disponibles: <span className="font-medium">{buildings.length}</span>
+              Buildings disponibles:{" "}
+              <span className="font-medium">{buildings.length}</span>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {buildings.map((b) => (
@@ -206,8 +283,12 @@ export default function AdminDashboard() {
                       isSquare
                     />
                     <div className="min-w-0">
-                      <div className="truncate font-semibold text-sm/6">{b.name}</div>
-                      <div className="truncate text-muted-fg text-xs/5">{b.address ?? "—"}</div>
+                      <div className="truncate font-semibold text-sm/6">
+                        {b.name}
+                      </div>
+                      <div className="truncate text-muted-fg text-xs/5">
+                        {b.address ?? "—"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -219,36 +300,78 @@ export default function AdminDashboard() {
 
       {!error && selectedBuilding ? (
         <div className="space-y-6">
-          <SelectedBuildingHero building={selectedBuilding} />
-
           <CoinsCard>
-            <CoinsCardHeader title="Métricas" description="Resumen por mes (evita traer toda la BD)" />
+            <CoinsCardHeader title="Métricas" className="flex justify-between">
+              <CoinsTabs
+                selectedKey={filterMode}
+                onSelectionChange={(key) =>
+                  setFilterMode(String(key) as FilterMode)
+                }
+                className="w-min"
+              >
+                <CoinsTabsList
+                  aria-label="Filtro"
+                  items={[
+                    { id: "month", label: "Mes" },
+                    { id: "range", label: "Rango" },
+                    { id: "year", label: "Año" },
+                  ]}
+                >
+                  {(item) => <CoinsTab id={item.id}>{item.label}</CoinsTab>}
+                </CoinsTabsList>
+              </CoinsTabs>
+            </CoinsCardHeader>
             <CoinsCardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
-                <div className="sm:col-span-1">
-                  <CoinsMonthPicker value={month} onChange={setMonth} />
-                </div>
-
-                <div className="sm:col-span-2">
-                  {metricsError ? (
-                    <div className="text-sm/6 text-danger-subtle-fg">{metricsError}</div>
+              <div className="flex items-end gap-4 overflow-x-auto">
+                <div className="w-min">
+                  {filterMode === "month" ? (
+                    <CoinsMonthPicker className="w-min" value={month} onChange={setMonth} />
+                  ) : filterMode === "range" ? (
+                    <div className="inline-flex items-end gap-3">
+                      <CoinsMonthPicker
+                        className="w-min"
+                        label="Desde"
+                        value={rangeStartMonth}
+                        onChange={setRangeStartMonth}
+                      />
+                      <CoinsMonthPicker
+                        className="w-min"
+                        label="Hasta"
+                        value={rangeEndMonth}
+                        onChange={setRangeEndMonth}
+                      />
+                    </div>
                   ) : (
-                    <div className="text-muted-fg text-sm/6">
-                      {metricsLoading
-                        ? "Cargando métricas…"
-                        : metrics?.range
-                          ? `Rango (UTC): ${new Date(metrics.range.startDatetime).toLocaleDateString()} → ${new Date(
-                              metrics.range.endDatetime,
-                            ).toLocaleDateString()}`
-                          : "—"}
+                    <div className="w-min">
+                      <div className="text-muted-fg text-sm/6">Año</div>
+                      <div className="mt-1">
+                        <CoinsSelect
+                          className="w-fit"
+                          value={String(year)}
+                          onChange={(e) => setYear(Number(e.target.value))}
+                          options={yearOptions}
+                          placeholder="Año"
+                        />
+                      </div>
                     </div>
                   )}
+                </div>
+
+                <div className="min-w-60 flex-1">
+                  {metricsError ? (
+                    <div className="text-sm/6 text-danger-subtle-fg">
+                      {metricsError}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <CoinsCard>
-                  <CoinsCardHeader title="Apartamentos" description="Cantidad total en el building" />
+                  <CoinsCardHeader
+                    title="Apartamentos"
+                    description="Cantidad total en el building"
+                  />
                   <CoinsCardContent>
                     <div className="text-3xl font-semibold">
                       {metricsLoading ? "—" : metrics?.apartmentsCount ?? 0}
@@ -257,7 +380,10 @@ export default function AdminDashboard() {
                 </CoinsCard>
 
                 <CoinsCard>
-                  <CoinsCardHeader title="Agendamientos" description="Cantidad en el mes seleccionado" />
+                  <CoinsCardHeader
+                    title="Agendamientos"
+                    description="Total en el filtro seleccionado"
+                  />
                   <CoinsCardContent>
                     <div className="text-3xl font-semibold">
                       {metricsLoading ? "—" : metrics?.schedulingsCount ?? 0}
@@ -267,14 +393,24 @@ export default function AdminDashboard() {
               </div>
 
               <CoinsCard>
-                <CoinsCardHeader title="Gráfico" description="Comparativo rápido" />
+                <CoinsCardHeader
+                  title="Agendamientos por mes"
+                  description="Serie mensual"
+                />
                 <CoinsCardContent>
-                  <CoinsBarChart
-                    items={[
-                      { label: "Apartamentos", value: metricsLoading ? 0 : metrics?.apartmentsCount ?? 0, colorVar: "--chart-1" },
-                      { label: "Agendamientos", value: metricsLoading ? 0 : metrics?.schedulingsCount ?? 0, colorVar: "--chart-2" },
-                    ]}
-                  />
+                  {shouldUseLineChart ? (
+                    <CoinsLineChart
+                      points={metricsLoading ? [] : seriesPoints}
+                      seriesLabel="Agendamientos"
+                      colorVar="--chart-1"
+                    />
+                  ) : (
+                    <CoinsBarSeriesChart
+                      points={metricsLoading ? [] : seriesPoints}
+                      seriesLabel="Agendamientos"
+                      colorVar="--chart-1"
+                    />
+                  )}
                 </CoinsCardContent>
               </CoinsCard>
             </CoinsCardContent>
@@ -282,20 +418,37 @@ export default function AdminDashboard() {
 
           <div className="grid gap-6 lg:grid-cols-3">
             <CoinsCard className="lg:col-span-2">
-              <CoinsCardHeader title="Detalles" description="Información general del building" />
+              <CoinsCardHeader
+                title="Detalles"
+                description="Información general del building"
+              />
               <CoinsCardContent className="space-y-3">
                 <InfoRow
                   label="Estado"
                   value={
-                    <CoinsBadge intent={selectedBuilding.state ? "success" : "danger"}>
+                    <CoinsBadge
+                      intent={selectedBuilding.state ? "success" : "danger"}
+                    >
                       {selectedBuilding.state ? "Activo" : "Inactivo"}
                     </CoinsBadge>
                   }
                 />
-                <InfoRow label="Dirección" value={selectedBuilding.address || "—"} />
-                <InfoRow label="Descripción" value={selectedBuilding.description || "—"} />
-                <InfoRow label="Holding" value={selectedBuilding.holdingId || "—"} />
-                <InfoRow label="Stays" value={selectedBuilding.staysId || "—"} />
+                <InfoRow
+                  label="Dirección"
+                  value={selectedBuilding.address || "—"}
+                />
+                <InfoRow
+                  label="Descripción"
+                  value={selectedBuilding.description || "—"}
+                />
+                <InfoRow
+                  label="Holding"
+                  value={selectedBuilding.holdingId || "—"}
+                />
+                <InfoRow
+                  label="Stays"
+                  value={selectedBuilding.staysId || "—"}
+                />
               </CoinsCardContent>
               <CoinsCardFooter>
                 <div className="text-muted-fg text-xs/5">
@@ -305,21 +458,45 @@ export default function AdminDashboard() {
             </CoinsCard>
 
             <CoinsCard>
-              <CoinsCardHeader title="Conexión" description="Datos no sensibles" />
+              <CoinsCardHeader
+                title="Conexión"
+                description="Datos no sensibles"
+              />
               <CoinsCardContent className="space-y-3">
-                <InfoRow label="Client ID" value={selectedBuilding.clientId || "—"} />
-                <InfoRow label="Usuario" value={selectedBuilding.username ? mask(selectedBuilding.username) : "—"} />
-                <InfoRow label="Client Secret" value={selectedBuilding.clientSecret ? mask(selectedBuilding.clientSecret) : "—"} />
+                <InfoRow
+                  label="Client ID"
+                  value={selectedBuilding.clientId || "—"}
+                />
+                <InfoRow
+                  label="Usuario"
+                  value={
+                    selectedBuilding.username
+                      ? mask(selectedBuilding.username)
+                      : "—"
+                  }
+                />
+                <InfoRow
+                  label="Client Secret"
+                  value={
+                    selectedBuilding.clientSecret
+                      ? mask(selectedBuilding.clientSecret)
+                      : "—"
+                  }
+                />
               </CoinsCardContent>
               <CoinsCardFooter>
-                <CoinsButton variant="outline" type="button" onClick={() => (window.location.href = "/")}
-                  >Ir al inicio</CoinsButton
+                <CoinsButton
+                  variant="outline"
+                  type="button"
+                  onClick={() => (window.location.href = "/")}
                 >
+                  Ir al inicio
+                </CoinsButton>
               </CoinsCardFooter>
             </CoinsCard>
           </div>
         </div>
       ) : null}
     </Container>
-  )
+  );
 }
