@@ -1,6 +1,8 @@
 "use client"
 
-import CoinsBuildingSelect from "@/components/coins/coins-building-select.component"
+import * as React from "react"
+
+import CoinsBuildingTabs from "@/components/coins/coins-building-tabs.component"
 import CoinsBadge from "@/components/coins/coins-badge.component"
 import CoinsButton from "@/components/coins/coins-button.component"
 import CoinsCard, {
@@ -78,7 +80,20 @@ export default function AdminDashboard() {
   const error = (sessionQuery as any)?.error
 
   const buildings: Building[] = session?.buildings ?? []
-  const selectedBuilding: Building | null = session?.selectedBuilding ?? null
+  const sessionSelectedBuilding: Building | null = session?.selectedBuilding ?? null
+
+  const [activeBuildingId, setActiveBuildingId] = React.useState<string>("")
+
+  const activeBuildingFromList = React.useMemo(() => {
+    if (!activeBuildingId) return null
+    return buildings.find((b) => String(b.id) === activeBuildingId) ?? null
+  }, [activeBuildingId, buildings])
+
+  const selectedBuilding =
+    sessionSelectedBuilding &&
+    (!activeBuildingId || String(sessionSelectedBuilding.id) === activeBuildingId)
+      ? sessionSelectedBuilding
+      : activeBuildingFromList
 
   return (
     <Container className="py-8" constrained>
@@ -95,7 +110,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <CoinsBuildingSelect />
+          <CoinsBuildingTabs onSelectedIdChange={setActiveBuildingId} />
         </div>
       </div>
 
