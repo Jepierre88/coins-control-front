@@ -17,7 +17,16 @@ import { Container } from "@/components/ui/container"
 import { Heading } from "@/components/ui/heading"
 import { Separator } from "@/components/ui/separator"
 import { authClient } from "@/lib/auth-client"
+import { getBuildingDashboardMetricsByMonth, type BuildingDashboardMetrics } from "@/datasource/coins-control.datasource"
 import type { Building } from "@/types/auth-types.entity"
+import CoinsMonthPicker from "@/components/coins/coins-month-picker.component"
+import CoinsBarChart from "@/components/coins/coins-bar-chart.component"
+
+function currentMonthValue(now = new Date()) {
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, "0")
+  return `${y}-${m}`
+}
 
 function getInitials(name?: string | null) {
   if (!name) return ""
@@ -84,6 +93,11 @@ export default function AdminDashboard() {
 
   const [activeBuildingId, setActiveBuildingId] = React.useState<string>("")
 
+  const [month, setMonth] = React.useState<string>(() => currentMonthValue())
+  const [metrics, setMetrics] = React.useState<BuildingDashboardMetrics | null>(null)
+  const [metricsLoading, setMetricsLoading] = React.useState(false)
+  const [metricsError, setMetricsError] = React.useState<string | null>(null)
+
   const activeBuildingFromList = React.useMemo(() => {
     if (!activeBuildingId) return null
     return buildings.find((b) => String(b.id) === activeBuildingId) ?? null
@@ -94,6 +108,49 @@ export default function AdminDashboard() {
     (!activeBuildingId || String(sessionSelectedBuilding.id) === activeBuildingId)
       ? sessionSelectedBuilding
       : activeBuildingFromList
+
+  React.useEffect(() => {
+    let cancelled = false
+    async function run() {
+      if (!selectedBuilding?.id) {
+        setMetrics(null)
+        setMetricsError(null)
+        return
+      }
+
+      setMetricsLoading(true)
+      setMetricsError(null)
+
+      try {
+        const res = await getBuildingDashboardMetricsByMonth({
+          buildingId: selectedBuilding.id,
+          month,
+        })
+
+        if (cancelled) return
+
+        if (!res.success || !res.data) {
+          setMetrics(null)
+          setMetricsError(res.message || "No se pudieron cargar las métricas")
+          return
+        }
+
+        setMetrics(res.data)
+      } catch {
+        if (cancelled) return
+        setMetrics(null)
+        setMetricsError("No se pudieron cargar las métricas")
+      } finally {
+        if (cancelled) return
+        setMetricsLoading(false)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedBuilding?.id, month])
 
   return (
     <Container className="py-8" constrained>
@@ -163,6 +220,65 @@ export default function AdminDashboard() {
       {!error && selectedBuilding ? (
         <div className="space-y-6">
           <SelectedBuildingHero building={selectedBuilding} />
+
+          <CoinsCard>
+            <CoinsCardHeader title="Métricas" description="Resumen por mes (evita traer toda la BD)" />
+            <CoinsCardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
+                <div className="sm:col-span-1">
+                  <CoinsMonthPicker value={month} onChange={setMonth} />
+                </div>
+
+                <div className="sm:col-span-2">
+                  {metricsError ? (
+                    <div className="text-sm/6 text-danger-subtle-fg">{metricsError}</div>
+                  ) : (
+                    <div className="text-muted-fg text-sm/6">
+                      {metricsLoading
+                        ? "Cargando métricas…"
+                        : metrics?.range
+                          ? `Rango (UTC): ${new Date(metrics.range.startDatetime).toLocaleDateString()} → ${new Date(
+                              metrics.range.endDatetime,
+                            ).toLocaleDateString()}`
+                          : "—"}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <CoinsCard>
+                  <CoinsCardHeader title="Apartamentos" description="Cantidad total en el building" />
+                  <CoinsCardContent>
+                    <div className="text-3xl font-semibold">
+                      {metricsLoading ? "—" : metrics?.apartmentsCount ?? 0}
+                    </div>
+                  </CoinsCardContent>
+                </CoinsCard>
+
+                <CoinsCard>
+                  <CoinsCardHeader title="Agendamientos" description="Cantidad en el mes seleccionado" />
+                  <CoinsCardContent>
+                    <div className="text-3xl font-semibold">
+                      {metricsLoading ? "—" : metrics?.schedulingsCount ?? 0}
+                    </div>
+                  </CoinsCardContent>
+                </CoinsCard>
+              </div>
+
+              <CoinsCard>
+                <CoinsCardHeader title="Gráfico" description="Comparativo rápido" />
+                <CoinsCardContent>
+                  <CoinsBarChart
+                    items={[
+                      { label: "Apartamentos", value: metricsLoading ? 0 : metrics?.apartmentsCount ?? 0, colorVar: "--chart-1" },
+                      { label: "Agendamientos", value: metricsLoading ? 0 : metrics?.schedulingsCount ?? 0, colorVar: "--chart-2" },
+                    ]}
+                  />
+                </CoinsCardContent>
+              </CoinsCard>
+            </CoinsCardContent>
+          </CoinsCard>
 
           <div className="grid gap-6 lg:grid-cols-3">
             <CoinsCard className="lg:col-span-2">
