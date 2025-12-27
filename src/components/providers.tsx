@@ -5,6 +5,7 @@ import { RouterProvider } from "react-aria-components"
 
 import { ThemeProvider } from "./theme-provider"
 import { DialogProvider } from "@/context/dialog.context"
+import { LoadingProvider } from "@/context/loading.context"
 import CoinsCustomDialog from "@/components/coins/coins-custom-dialog.component"
 
 declare module "react-aria-components" {
@@ -19,10 +20,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <RouterProvider navigate={router.push}>
       <ThemeProvider storageKey="theme-ui" attribute="class" defaultTheme="system">
-        <DialogProvider>
-          <CoinsCustomDialog />
-          {children}
-        </DialogProvider>
+        <LoadingProvider>
+          <DialogProvider>
+            <CoinsCustomDialog />
+            {children}
+          </DialogProvider>
+        </LoadingProvider>
       </ThemeProvider>
     </RouterProvider>
   )

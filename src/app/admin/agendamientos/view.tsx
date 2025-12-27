@@ -17,6 +17,7 @@ import { CoinsPagination } from "@/components/coins/coins-pagination.component"
 import GenerateSchedulingDialog from "./components/generate-scheduling-dialog.component"
 import { authClient } from "@/lib/auth-client"
 import { UseDialogContext } from "@/context/dialog.context"
+import { useLoading } from "@/context/loading.context"
 import {
   getApartmentsByBuildingId,
   getSchedulingsPage,
@@ -119,8 +120,8 @@ export default function AgendamientosView() {
   const [items, setItems] = React.useState<SchedulingListItem[]>([])
   const [total, setTotal] = React.useState(0)
 
-  const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+    const { isLoading: isLoadingContext, setLoading: setLoadingContext } = useLoading()
 
   const [draftApartmentId, setDraftApartmentId] = React.useState(apartmentId)
   const [draftStartDate, setDraftStartDate] = React.useState(startDate)
@@ -166,7 +167,7 @@ export default function AgendamientosView() {
         return
       }
 
-      setLoading(true)
+      setLoadingContext('schedulings-table', true)
       setError(null)
 
       try {
@@ -198,7 +199,7 @@ export default function AgendamientosView() {
         setError("No se pudieron cargar los agendamientos")
       } finally {
         if (cancelled) return
-        setLoading(false)
+        setLoadingContext('schedulings-table', false)
       }
     }
 
@@ -316,7 +317,7 @@ export default function AgendamientosView() {
 
   return (
     <Container className="py-8" constrained>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between px-6">
         <div>
           <Heading level={1}>Agendamientos</Heading>
           <div className="text-muted-fg text-sm/6">
@@ -324,11 +325,12 @@ export default function AgendamientosView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex justify-center items-center gap-2">
           <CoinsButton
             variant="primary"
+            className={"w-full"}
             onClick={openCreateScheduling}
-            isDisabled={!selectedBuildingId || loading}
+            isDisabled={!selectedBuildingId || isLoadingContext("schedulings-table")}
             startIcon={PlusIcon}
           >
             Generar agendamiento
@@ -396,14 +398,15 @@ export default function AgendamientosView() {
       <CoinsCard>
         <CoinsCardHeader
           title="Resultados"
-          description={loading ? "Cargando…" : `${total} agendamientos`}
+          description={isLoadingContext("schedulings-table") ? "Cargando…" : `${total} agendamientos`}
         />
         <CoinsCardContent>
           <CoinsTable
             ariaLabel="Agendamientos"
             items={items}
             columns={columns}
-            isLoading={loading}
+            loadingKey="schedulings-table"
+            emptyState="No hay agendamientos registrados"
             getRowId={(it) => String(it.id ?? `${it.apartmentId ?? ""}-${it.start ?? ""}`)}
           />
 

@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from "react"
 import { authClient } from "@/lib/auth-client"
+import { useLoading } from "@/context/loading.context"
 
 export function GlobalLoader() {
   const { useSession } = authClient
   const sessionQuery = useSession()
+  const { setLoading, isAnyLoading } = useLoading()
   const [isVisible, setIsVisible] = useState(true)
 
-  const isLoading = Boolean(
+  const isSessionLoading = Boolean(
     (sessionQuery as any)?.isPending ?? (sessionQuery as any)?.isLoading
   )
+
+  // Sincronizar el estado de la sesión con el contexto de loading
+  useEffect(() => {
+    setLoading("global", isSessionLoading)
+  }, [isSessionLoading, setLoading])
+
+  const isLoading = isAnyLoading()
 
   useEffect(() => {
     if (!isLoading) {
