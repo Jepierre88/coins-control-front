@@ -347,12 +347,6 @@ export default function AgendamientosView() {
                 ]}
               />
             </div>
-
-            <div className="flex items-end justify-end">
-              <CoinsButton variant="secondary" onClick={clearFilters}>
-                Limpiar
-              </CoinsButton>
-            </div>
           </div>
         </CoinsCardContent>
       </CoinsCard>

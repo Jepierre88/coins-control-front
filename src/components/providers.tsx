@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { RouterProvider } from "react-aria-components"
 
 import { ThemeProvider } from "./theme-provider"
+import { DialogProvider } from "@/context/dialog.context"
+import CoinsCustomDialog from "@/components/coins/coins-custom-dialog.component"
 
 declare module "react-aria-components" {
   interface RouterConfig {
@@ -17,7 +19,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <RouterProvider navigate={router.push}>
       <ThemeProvider storageKey="theme-ui" attribute="class" defaultTheme="system">
-        {children}
+        <DialogProvider>
+          <CoinsCustomDialog />
+          {children}
+        </DialogProvider>
       </ThemeProvider>
     </RouterProvider>
   )
