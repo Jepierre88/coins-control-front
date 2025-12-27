@@ -33,9 +33,9 @@ export default function CoinsCustomDialog() {
       <CoinsModalContent size="md" className="w-fit sm:max-w-none">
         <CoinsModalHeader>
           <CoinsModalTitle>{title}</CoinsModalTitle>
+        {description ? <CoinsModalDescription>{description}</CoinsModalDescription> : null}
         </CoinsModalHeader>
 
-        {description ? <CoinsModalDescription>{description}</CoinsModalDescription> : null}
 
         <CoinsModalBody>{renderContent}</CoinsModalBody>
 

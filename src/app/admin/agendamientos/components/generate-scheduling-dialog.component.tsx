@@ -4,16 +4,14 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import CoinsButton from "@/components/coins/coins-button.component"
-import CoinsForm, { CoinsFormField } from "@/components/coins/coins-form.component"
-import CoinsLabel from "@/components/coins/coins-label.component"
-import CoinsSelect from "@/components/coins/coins-select.component"
+import CoinsForm, { CoinsFormField, CoinsFormSelectField } from "@/components/coins/coins-form.component"
 import { UseDialogContext } from "@/context/dialog.context"
 import {
   generateApartmentScheduling,
   type ApartmentListItem,
 } from "@/datasource/coins-control.datasource"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Controller, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
 
 import {
   GenerateSchedulingSchema,
@@ -44,14 +42,9 @@ export default function GenerateSchedulingDialog({
   const defaultStart = React.useMemo(() => toDatetimeLocal(new Date(Date.now() + 60_000)), [])
   const defaultEnd = React.useMemo(() => toDatetimeLocal(new Date(Date.now() + 24 * 60 * 60_000)), [])
 
-  const firstApartmentId = React.useMemo(() => {
-    const id = apartments?.[0]?.id
-    return id ? String(id) : ""
-  }, [apartments])
-
   const form = useForm<GenerateSchedulingSchemaType>({
     defaultValues: {
-      apartmentId: firstApartmentId,
+      apartmentId: "",
       identificationNumber: "",
       name: "",
       lastName: "",
@@ -132,68 +125,55 @@ export default function GenerateSchedulingDialog({
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Controller
-          control={form.control}
+        <CoinsFormSelectField
+          form={form}
           name="apartmentId"
-          render={({ field, fieldState }) => (
-            <div className="grid gap-1.5">
-              <CoinsLabel>Apartamento</CoinsLabel>
-              <CoinsSelect
-                value={field.value}
-                onChange={(e) => field.onChange(e.target.value)}
-                options={[
-                  { value: "", label: "Selecciona…" },
-                  ...apartments.map((a) => ({
-                    value: String(a.id ?? ""),
-                    label: a.name ?? String(a.id ?? ""),
-                  })),
-                ]}
-              />
-              {fieldState.error?.message ? (
-                <p role="alert" className="text-sm/6 text-danger-subtle-fg">
-                  {fieldState.error.message}
-                </p>
-              ) : null}
-            </div>
-          )}
+          label="Apartamento"
+          required
+          options={[
+            { value: "", label: "Selecciona…" },
+            ...apartments.map((a) => ({
+              value: String(a.id ?? ""),
+              label: a.name ?? String(a.id ?? ""),
+            })),
+          ]}
         />
 
         <CoinsFormField
           form={form}
           name="identificationNumber"
           label="Documento"
-          inputProps={{ placeholder: "Cédula" }}
+          inputProps={{ placeholder: "Cédula", required: true }}
         />
 
-        <CoinsFormField form={form} name="name" label="Nombre" />
-        <CoinsFormField form={form} name="lastName" label="Apellido" />
+        <CoinsFormField form={form} name="name" label="Nombre" inputProps={{ required: true }} />
+        <CoinsFormField form={form} name="lastName" label="Apellido" inputProps={{ required: true }} />
 
         <CoinsFormField
           form={form}
           name="email"
           label="Correo"
-          inputProps={{ placeholder: "correo@dominio.com", inputMode: "email", autoComplete: "email" }}
+          inputProps={{ placeholder: "correo@dominio.com", inputMode: "email", autoComplete: "email", required: true }}
         />
 
         <CoinsFormField
           form={form}
           name="cellPhoneNumber"
           label="Celular"
-          description="Opcional"
         />
 
         <CoinsFormField
           form={form}
           name="startLocal"
           label="Check-in"
-          inputProps={{ type: "datetime-local" }}
+          inputProps={{ type: "datetime-local", required: true }}
         />
 
         <CoinsFormField
           form={form}
           name="endLocal"
           label="Check-out"
-          inputProps={{ type: "datetime-local" }}
+          inputProps={{ type: "datetime-local", required: true }}
         />
       </div>
 

@@ -63,6 +63,7 @@ export default function LoginPage() {
                 name="identificationNumber"
                 label="Identificación"
                 inputProps={{
+                  required: true,
                   autoComplete: "username",
                   placeholder: "Ej: 123456789",
                 }}
@@ -73,6 +74,7 @@ export default function LoginPage() {
                 name="password"
                 label="Contraseña"
                 inputProps={{
+                  required: true,
                   type: "password",
                   autoComplete: "current-password",
                   placeholder: "••••••••",
