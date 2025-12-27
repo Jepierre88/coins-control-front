@@ -61,6 +61,9 @@ export default function AppNavbar(props: NavbarProps) {
           <NavbarItem href="/admin" isCurrent>
             Inicio
           </NavbarItem>
+          <NavbarItem href="/admin/agendamientos">
+            Agendamientos
+          </NavbarItem>
           {/* <Menu>
             <NavbarItem>
               Categories

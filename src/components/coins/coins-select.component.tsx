@@ -44,13 +44,13 @@ export default function CoinsSelect({ className, options, placeholder, ...props 
       isDisabled={disabled}
       isRequired={required}
       placeholder={placeholder}
-      selectedKey={value === undefined || value === "" ? undefined : String(value)}
-      defaultSelectedKey={
+      value={value === undefined || value === "" ? undefined : String(value)}
+      defaultValue={
         defaultValue === undefined || defaultValue === "" ? undefined : String(defaultValue)
       }
       onBlur={onBlur as unknown as React.FocusEventHandler<Element>}
       onFocus={onFocus as unknown as React.FocusEventHandler<Element>}
-      onSelectionChange={(key) => {
+      onChange={(key) => {
         const nextValue = key == null ? "" : String(key)
         onChange?.({ target: { value: nextValue } } as unknown as React.ChangeEvent<HTMLSelectElement>)
       }}

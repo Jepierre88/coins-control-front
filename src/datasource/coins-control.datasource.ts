@@ -248,3 +248,161 @@ export async function getSchedulingsMonthlyCounts(args: {
         };
     }
 }
+
+export type ApartmentListItem = {
+    id?: number;
+    name?: string;
+    buildingId?: number;
+};
+
+export async function getApartmentsByBuildingId(
+    buildingId: string | number,
+    externalToken?: string,
+): Promise<ActionResponseEntity<ApartmentListItem[]>> {
+    try {
+        const api = externalToken ? createMainApi({ externalToken }) : mainApi;
+        const response = await api.get<ApartmentListItem[]>(`/apartments`, {
+            params: {
+                filter: {
+                    where: { buildingId: Number(buildingId) },
+                    order: ["name ASC"],
+                },
+            },
+        });
+
+        return {
+            success: true,
+            message: "Apartamentos obtenidos con éxito",
+            data: response.data,
+        };
+    } catch {
+        return {
+            success: false,
+            message: "No se pudieron obtener los apartamentos.",
+            data: [],
+        };
+    }
+}
+
+export type SchedulingListItem = {
+    id?: number;
+    start?: string;
+    end?: string;
+    state?: string;
+    name?: string;
+    lastName?: string;
+    apartmentId?: number;
+    buildingId?: number;
+    apartment?: { id?: number; name?: string };
+};
+
+export type GetSchedulingsPageArgs = {
+    buildingId: string | number;
+    page: number;
+    pageSize: number;
+    apartmentId?: string | number;
+    startDate?: string; // YYYY-MM-DD
+    endDate?: string; // YYYY-MM-DD
+    state?: string;
+};
+
+export type PaginatedResponse<T> = {
+    items: T[];
+    total: number;
+};
+
+function dateOnlyToUtcStart(dateOnly: string) {
+    return new Date(`${dateOnly}T00:00:00.000Z`).toISOString();
+}
+
+function dateOnlyToUtcEnd(dateOnly: string) {
+    return new Date(`${dateOnly}T23:59:59.999Z`).toISOString();
+}
+
+export async function getSchedulingsPage(
+    args: GetSchedulingsPageArgs,
+    externalToken?: string,
+): Promise<ActionResponseEntity<PaginatedResponse<SchedulingListItem>>> {
+    try {
+        const api = externalToken ? createMainApi({ externalToken }) : mainApi;
+
+        const pageSize = Math.max(1, Math.floor(args.pageSize || 20));
+        const page = Math.max(1, Math.floor(args.page || 1));
+        const skip = (page - 1) * pageSize;
+
+        const where: any = {
+            buildingId: Number(args.buildingId),
+        };
+
+        if (args.apartmentId) {
+            where.apartmentId = Number(args.apartmentId);
+        }
+        if (args.state) {
+            const raw = String(args.state);
+            const lower = raw.toLowerCase();
+
+            // Scheduling.state is a free-form string in the backend model.
+            // Match common variants/casings so the UI select works reliably.
+            const variants = new Set<string>([raw, lower]);
+            variants.add(lower.charAt(0).toUpperCase() + lower.slice(1));
+
+            if (lower === "pendingtoactivate") {
+                variants.add("pendingToActivate");
+                variants.add("PendingToActivate");
+            }
+            if (lower === "canceled" || lower === "cancelled") {
+                variants.add("canceled");
+                variants.add("CANCELED");
+                variants.add("Canceled");
+                variants.add("cancelled");
+                variants.add("CANCELLED");
+                variants.add("Cancelled");
+            }
+
+            where.state = { inq: Array.from(variants) };
+        }
+        if (args.startDate && args.endDate) {
+            where.start = {
+                between: [dateOnlyToUtcStart(args.startDate), dateOnlyToUtcEnd(args.endDate)],
+            };
+        } else if (args.startDate) {
+            where.start = {
+                gte: dateOnlyToUtcStart(args.startDate),
+            };
+        } else if (args.endDate) {
+            where.start = {
+                lte: dateOnlyToUtcEnd(args.endDate),
+            };
+        }
+
+        const [countRes, listRes] = await Promise.all([
+            api.get<{ count: number }>(`/schedulings/count`, { params: { where } }),
+            api.get<SchedulingListItem[]>(`/schedulings`, {
+                params: {
+                    filter: {
+                        where,
+                        order: ["start DESC"],
+                        limit: pageSize,
+                        skip,
+                        include: [{ relation: "apartment" }],
+                    },
+                },
+            }),
+        ]);
+
+        return {
+            success: true,
+            message: "Agendamientos obtenidos con éxito",
+            data: {
+                total: countRes.data.count ?? 0,
+                items: listRes.data ?? [],
+            },
+        };
+    } catch {
+        return {
+            success: false,
+            message: "No se pudieron obtener los agendamientos.",
+            data: { total: 0, items: [] },
+        };
+    }
+}
