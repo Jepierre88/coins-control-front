@@ -2,6 +2,8 @@
 import { createMainApi, mainApi } from "@/lib/axios-instance";
 import { ActionResponseEntity } from "@/types/action-response.entity";
 import { Building } from "@/types/auth-types.entity";
+import { addCustomPassCode } from "@/datasource/sciener.datasource";
+import { generateKeyboardPwd } from "@/lib/sciener/sciener-utils";
 
 export type BuildingDashboardMetrics = {
     apartmentsCount: number;
@@ -295,6 +297,185 @@ export type SchedulingListItem = {
     buildingId?: number;
     apartment?: { id?: number; name?: string };
 };
+
+export type SchedulingRequirements = {
+    buildingId: number;
+    apartmentId: number;
+    accessTokenSmartLocker?: string;
+    clientId?: string | number;
+    lockId?: string | number;
+};
+
+export async function getSchedulingRequirements(
+    args: { buildingId: string | number; apartmentId: string | number },
+    externalToken?: string,
+): Promise<ActionResponseEntity<SchedulingRequirements>> {
+    try {
+        const api = externalToken ? createMainApi({ externalToken }) : mainApi;
+        const response = await api.post<SchedulingRequirements>(`/scheduling-requirements`, {
+            buildingId: Number(args.buildingId),
+            apartmentId: Number(args.apartmentId),
+        });
+
+        return {
+            success: true,
+            message: "Requisitos de agendamiento obtenidos con éxito",
+            data: response.data,
+        };
+    } catch {
+        return {
+            success: false,
+            message: "No se pudieron obtener los requisitos de la chapa.",
+        };
+    }
+}
+
+export type CreateSchedulingArgs = {
+    buildingId: string | number;
+    apartmentId: string | number;
+    startDatetime: string; // ISO
+    endDatetime: string; // ISO
+
+    name: string;
+    lastName: string;
+    identificationNumber: string;
+    email: string;
+    cellPhoneNumber?: string;
+
+    createdBy?: string;
+
+    keyboardPwd?: string;
+    keyboardPwdId?: string | number;
+};
+
+export async function createScheduling(
+    args: CreateSchedulingArgs,
+    externalToken?: string,
+): Promise<ActionResponseEntity<SchedulingListItem>> {
+    try {
+        const api = externalToken ? createMainApi({ externalToken }) : mainApi;
+        const payload: any = {
+            datetime: new Date().toISOString(),
+            start: args.startDatetime,
+            end: args.endDatetime,
+            title: "Agendamiento apartamento",
+            state: "Created",
+            type: "Agendamiento",
+            name: args.name.toLocaleUpperCase(),
+            lastName: args.lastName.toLocaleUpperCase(),
+            cellPhoneNumber: args.cellPhoneNumber ?? "",
+            typeIdentificationDocument: "CC",
+            identificationNumber: args.identificationNumber,
+            keyboardPwd: args.keyboardPwd ? String(args.keyboardPwd) : "",
+            keyboardPwdId: args.keyboardPwdId ? String(args.keyboardPwdId) : "",
+            email: args.email,
+            createdBy: args.createdBy ?? "",
+            apartmentId: Number(args.apartmentId),
+            buildingId: Number(args.buildingId),
+        };
+
+        const response = await api.post<SchedulingListItem>(`/schedulings`, payload);
+        return {
+            success: true,
+            message: "Agendamiento creado con éxito",
+            data: response.data,
+        };
+    } catch {
+        return {
+            success: false,
+            message: "No se pudo crear el agendamiento.",
+        };
+    }
+}
+
+export type GenerateApartmentSchedulingArgs = Omit<CreateSchedulingArgs, "keyboardPwd" | "keyboardPwdId">;
+
+export async function generateApartmentScheduling(
+    args: GenerateApartmentSchedulingArgs,
+    externalToken?: string,
+): Promise<ActionResponseEntity<{ schedulingId: number; keyboardPwd?: string }>> {
+    try {
+        const reqRes = await getSchedulingRequirements(
+            { buildingId: args.buildingId, apartmentId: args.apartmentId },
+            externalToken,
+        );
+
+        if (!reqRes.success || !reqRes.data) {
+            return {
+                success: false,
+                message: reqRes.message || "No se pudieron obtener los requisitos de la chapa.",
+            };
+        }
+
+        const lockId = reqRes.data.lockId;
+        const clientId = reqRes.data.clientId;
+        const accessTokenSmartLocker = reqRes.data.accessTokenSmartLocker;
+
+        let keyboardPwdId: string | number | undefined;
+        let keyboardPwd: string | undefined;
+
+        // If there is an associated lock, generate and register a passcode in Sciener.
+        if (lockId && String(lockId).trim() !== "") {
+            if (!clientId || !accessTokenSmartLocker) {
+                return {
+                    success: false,
+                    message: "La configuración de la chapa está incompleta.",
+                };
+            }
+
+            keyboardPwd = generateKeyboardPwd(6);
+
+            const passcodeRes = await addCustomPassCode({
+                clientId,
+                accessToken: accessTokenSmartLocker,
+                lockId,
+                keyboardPwd: keyboardPwd,
+                keyboardPwdName: args.identificationNumber,
+                startDate: args.startDatetime,
+                endDate: args.endDatetime,
+            });
+
+            if ((passcodeRes as any)?.errcode) {
+                return {
+                    success: false,
+                    message: "Ups, la chapa presenta dificultades. Comunícate con soporte.",
+                };
+            }
+
+            keyboardPwdId = passcodeRes.keyboardPwdId;
+        }
+
+        const createRes = await createScheduling(
+            {
+                ...args,
+                keyboardPwd,
+                keyboardPwdId,
+            },
+            externalToken,
+        );
+
+        if (!createRes.success || !createRes.data?.id) {
+            return {
+                success: false,
+                message: createRes.message || "No se pudo crear el agendamiento.",
+            };
+        }
+
+        return {
+            success: true,
+            message: "Agendamiento creado con éxito",
+            data: {
+                schedulingId: Number(createRes.data.id),
+                keyboardPwd,
+            },
+        };
+    } catch {
+        return {
+            success: false,
+            message: "No se pudo generar el agendamiento.",
+        };
+    }
+}
 
 export type GetSchedulingsPageArgs = {
     buildingId: string | number;

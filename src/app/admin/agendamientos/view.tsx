@@ -14,13 +14,16 @@ import CoinsCard, { CoinsCardContent, CoinsCardHeader } from "@/components/coins
 import CoinsSelect from "@/components/coins/coins-select.component"
 import { CoinsTable, type CoinsTableColumn } from "@/components/coins/coins-table.component"
 import { CoinsPagination } from "@/components/coins/coins-pagination.component"
+import GenerateSchedulingDialog from "./components/generate-scheduling-dialog.component"
 import { authClient } from "@/lib/auth-client"
+import { UseDialogContext } from "@/context/dialog.context"
 import {
   getApartmentsByBuildingId,
   getSchedulingsPage,
   type ApartmentListItem,
   type SchedulingListItem,
 } from "@/datasource/coins-control.datasource"
+import { PlusIcon } from "lucide-react"
 
 function buildHref(pathname: string, current: URLSearchParams, patch: Record<string, string | null>) {
   const next = new URLSearchParams(current)
@@ -90,6 +93,7 @@ export default function AgendamientosView() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { openDialog } = UseDialogContext()
 
   const defaultMonthRange = React.useMemo(() => currentMonthDateRange(), [])
 
@@ -100,6 +104,8 @@ export default function AgendamientosView() {
   const isSessionLoading = Boolean((sessionQuery as any)?.isPending ?? (sessionQuery as any)?.isLoading)
 
   const selectedBuildingId = session?.selectedBuilding?.id
+  const externalToken = session?.externalToken as string | undefined
+  const createdBy = (session?.userId ?? session?.user?.id) as string | undefined
 
   const page = parseIntParam(searchParams.get("page"), 1)
   const pageSize = parseIntParam(searchParams.get("pageSize"), 10)
@@ -291,6 +297,23 @@ export default function AgendamientosView() {
     router.push(href)
   }, [defaultMonthRange.endDate, defaultMonthRange.startDate, pathname, router, searchParams])
 
+  const openCreateScheduling = React.useCallback(() => {
+    if (!selectedBuildingId) return
+
+    openDialog({
+      title: "Generar agendamiento",
+      description: "Completa los datos del visitante y el intervalo.",
+      content: (
+        <GenerateSchedulingDialog
+          buildingId={selectedBuildingId}
+          apartments={apartments}
+          externalToken={externalToken}
+          createdBy={createdBy}
+        />
+      ),
+    })
+  }, [apartments, createdBy, externalToken, openDialog, selectedBuildingId])
+
   return (
     <Container className="py-8" constrained>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -299,6 +322,17 @@ export default function AgendamientosView() {
           <div className="text-muted-fg text-sm/6">
             {isSessionLoading ? "Cargando sesión…" : "Listado paginado y ordenado por más reciente"}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <CoinsButton
+            variant="primary"
+            onClick={openCreateScheduling}
+            isDisabled={!selectedBuildingId || loading}
+            startIcon={PlusIcon}
+          >
+            Generar agendamiento
+          </CoinsButton>
         </div>
       </div>
 
