@@ -19,6 +19,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { handleLogin } from "@/lib/auth-utils";
 import { ActionResponseEntity } from "@/types/action-response.entity";
+import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,8 +39,13 @@ export default function LoginPage() {
       });
 
       toast.success(res.message);
+      
+      // Navegar y forzar refresh completo para actualizar la sesión
       router.push("/admin");
       router.refresh();
+      
+      // Forzar reload de la ventana para asegurar que todo se actualice
+      window.location.href = "/admin";
     } catch (error: unknown) {
       const actionError = error as ActionResponseEntity<unknown>;
       toast.error(actionError?.message || "Error al iniciar sesión");
