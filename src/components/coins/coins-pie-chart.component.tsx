@@ -49,6 +49,8 @@ export default function CoinsPieChart({
 }: CoinsPieChartProps) {
   const { isLoading: isLoadingContext } = useLoading();
   const isLoading = loadingKey ? isLoadingContext(loadingKey) : false;
+  
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
 
   const totalValue = React.useMemo(() => {
     return items.reduce((acc, curr) => acc + curr.value, 0);
