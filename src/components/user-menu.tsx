@@ -21,42 +21,45 @@ import {
 import { authClient } from "@/lib/auth-client"
 import { redirect } from "next/navigation"
 import { toast } from "sonner"
+import { LogOut } from "lucide-react"
 
 export function UserMenu() {
 
   const {
-    signOut
+    signOut,
+    useSession
   } = authClient
+
+  const sessionQuery = useSession()
+  const user = sessionQuery.data?.user
 
   return (
     <Menu>
       <MenuTrigger aria-label="Open Menu">
         <Avatar
-          alt="cobain"
+          alt={user?.name ?? "Usuario"}
           size="md"
           isSquare
-          src="https://intentui.com/images/avatar/cobain.jpg"
-        />
+        >
+          {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
+        </Avatar>
       </MenuTrigger>
       <MenuContent placement="bottom right" className="min-w-60 sm:min-w-56">
         <MenuSection>
           <MenuHeader separator>
-            <span className="block">Kurt Cobain</span>
-            <span className="font-normal text-muted-fg">@cobain</span>
+            <span className="block">{user?.name ?? "Usuario"}</span>
+            <span className="font-normal text-muted-fg">{user?.email ?? ""}</span>
           </MenuHeader>
         </MenuSection>
-        <MenuItem href="#contact">
-          <LifebuoyIcon />
-          Customer Support
-        </MenuItem>
-        <MenuSeparator />
         <MenuItem onClick={async ()=>{
           await signOut()
           toast.success("Sesión cerrada exitosamente")
           redirect('/auth/login')
-        }}>
-          <ArrowRightOnRectangleIcon />
-          Log out
+        }}
+          className={'gap-1'}
+        >
+          <LogOut size={15} />
+          Cerrar sesión
         </MenuItem>
       </MenuContent>
     </Menu>

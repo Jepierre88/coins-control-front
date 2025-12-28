@@ -1,9 +1,8 @@
 "use client"
-import { MagnifyingGlassIcon, ShoppingBagIcon } from "@heroicons/react/24/outline"
 import { Avatar } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { Link } from "@/components/ui/link"
 import { GlobalLoader } from "@/components/global-loader"
+import CoinsCircle from "@/public/img/coins-circle.png"
 import {
   Navbar,
   NavbarGap,
@@ -50,7 +49,7 @@ export default function AppNavbar(props: NavbarProps) {
               isSquare
               size="sm"
               className="outline-hidden"
-              src="https://design.intentui.com/logo?color=155DFC"
+              src={CoinsCircle.src}
             />
             <span>
               COINS CONTROL
