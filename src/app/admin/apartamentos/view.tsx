@@ -12,6 +12,8 @@ import CoinsCard, {
 import { CoinsTable, CoinsTableActions, type CoinsTableColumn } from "@/components/coins/coins-table.component";
 import { authClient } from "@/lib/auth-client";
 import { useLoading } from "@/context/loading.context";
+import type { AppSession } from "@/types/auth-types.entity";
+
 import {
   getApartmentsByBuildingId,
   type ApartmentListItem,
@@ -37,16 +39,16 @@ export default function ApartamentosView() {
   const { setLoading, isLoading: isLoadingContext } = useLoading();
   const { showYesNoDialog, openDialog } = UseDialogContext();
 
-  const data = (sessionQuery as any)?.data;
-  const session = (data?.session ?? data) as any;
-  const isLoading = Boolean(
-    (sessionQuery as any)?.isPending ?? (sessionQuery as any)?.isLoading
-  );
-  const error = (sessionQuery as any)?.error;
 
-  const buildings: Building[] = session?.buildings ?? [];
-  const sessionSelectedBuilding: Building | null =
-    session?.selectedBuilding ?? null;
+  const data: unknown = sessionQuery?.data;
+  const session: AppSession = (data && typeof data === 'object' && 'session' in data)
+    ? (data as { session: AppSession }).session
+    : (data as AppSession) || {};
+  const isLoading = Boolean(sessionQuery?.isPending ?? sessionQuery?.isPending);
+  const error = sessionQuery?.error;
+
+  const buildings: Building[] = session.buildings ?? [];
+  const sessionSelectedBuilding: Building | null = session.selectedBuilding ?? null;
 
   const [activeBuildingId, setActiveBuildingId] = React.useState<string>("");
   const [apartments, setApartments] = React.useState<ApartmentListItem[]>([]);
