@@ -20,15 +20,12 @@ export type CoinsBarChartProps = {
   items: CoinsBarChartItem[]
   className?: string
   maxValue?: number
-  /** @deprecated */
-  isLoading?: boolean
   loadingKey?: string
   containerHeight?: number
 }
 
 /* =======================
-   Tooltip (solo valor)
-   Tipado estable (no depende de versión Recharts)
+   Tooltip
 ======================= */
 
 type SimpleTooltipProps = {
@@ -41,7 +38,6 @@ type SimpleTooltipProps = {
 
 function SingleBarValueTooltip({ active, payload }: SimpleTooltipProps) {
   if (!active || !payload || payload.length === 0) return null
-
   const value = payload[0]?.value
   if (value === undefined || value === null) return null
 
@@ -62,14 +58,29 @@ export default function CoinsBarChart({
   items,
   className,
   maxValue,
-  isLoading: isLoadingProp,
   loadingKey,
-  containerHeight = 200,
+  containerHeight,
 }: CoinsBarChartProps) {
   const { isLoading: isLoadingContext } = useLoading()
-  const isLoading = loadingKey
-    ? isLoadingContext(loadingKey)
-    : isLoadingProp ?? false
+  const isLoading = loadingKey ? isLoadingContext(loadingKey) : false
+
+  /* ✅ Detect mobile */
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
+
+  /* ✅ Height final */
+  const resolvedHeight =
+    typeof containerHeight === "number"
+      ? containerHeight
+      : isMobile
+      ? 450
+      : 200
 
   /* -------- Config -------- */
 
@@ -97,10 +108,7 @@ export default function CoinsBarChart({
           ? `var(${item.colorVar})`
           : undefined
 
-      cfg[key || item.label] = {
-        label: item.label,
-        color,
-      }
+      cfg[key || item.label] = { label: item.label, color }
     }
 
     return cfg
@@ -110,7 +118,6 @@ export default function CoinsBarChart({
 
   const data = React.useMemo(() => {
     const row: Record<string, unknown> = { label: "Métricas" }
-
     for (const item of items) {
       const key = item.label
         .toLowerCase()
@@ -118,18 +125,23 @@ export default function CoinsBarChart({
         .replace(/[^a-z0-9-]/g, "")
       row[key || item.label] = item.value
     }
-
     return [row]
   }, [items])
 
   const maxFromItems = Math.max(0, ...items.map((i) => i.value))
   const domainMax = Math.max(1, maxValue ?? maxFromItems)
 
+  const chartKey = React.useMemo(
+  () => `barchart-${resolvedHeight}-${items.length}`,
+  [resolvedHeight, items.length]
+)
+
+
   /* -------- Loading -------- */
 
   if (isLoading) {
     return (
-      <div className={twMerge(className)} style={{ height: containerHeight }}>
+      <div className={twMerge(className)} style={{ height: resolvedHeight }}>
         <CoinsLoader />
       </div>
     )
@@ -142,11 +154,10 @@ export default function CoinsBarChart({
       <BarChart
         config={config}
         data={data}
+        key={chartKey}
         dataKey="label"
-        containerHeight={containerHeight}
+        containerHeight={resolvedHeight}
         yAxisProps={{ domain: [0, domainMax] }}
-
-        /* ✅ Tooltip custom: SOLO valor hovered */
         tooltip={<SingleBarValueTooltip />}
       />
     </div>
