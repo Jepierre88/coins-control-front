@@ -12,19 +12,9 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { useLoading } from "@/context/loading.context"
+import CoinsLoader from "./coins-loader.component"
 
 // Componentes fuera del render para evitar problemas de hidratación
-function LoadingComponent({ message }: { message?: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-center justify-center p-16 text-center">
-      <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
-      <p className="text-sm text-muted-fg">
-        {message ?? "Cargando datos..."}
-      </p>
-    </div>
-  )
-}
-
 function EmptyStateComponent({ message }: { message?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -106,7 +96,7 @@ export function CoinsTable<TItem extends object>({
   // Vista mobile: cards
   if (isMobile) {
     if (isLoading) {
-      return <LoadingComponent message={loadingState} />
+      return <CoinsLoader message={loadingState} />
     }
 
     if (items.length === 0) {
@@ -186,7 +176,7 @@ export function CoinsTable<TItem extends object>({
       <TableBody
         items={items}
         renderEmptyState={() => (
-          isLoading ? <LoadingComponent message={loadingState} /> : <EmptyStateComponent message={emptyState} />
+          isLoading ? <CoinsLoader message={loadingState} /> : <EmptyStateComponent message={emptyState} />
         )}
       >
         {(item) => {
