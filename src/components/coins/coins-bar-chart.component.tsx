@@ -4,6 +4,8 @@ import * as React from "react"
 
 import { twMerge } from "tailwind-merge"
 import { BarChart } from "@/components/ui/bar-chart"
+import { useLoading } from "@/context/loading.context"
+import CoinsLoader from "./coins-loader.component"
 
 export type CoinsBarChartItem = {
   label: string
@@ -15,9 +17,24 @@ export type CoinsBarChartProps = {
   items: CoinsBarChartItem[]
   className?: string
   maxValue?: number
+  /** @deprecated Use loadingKey instead */
+  isLoading?: boolean
+  /** Loading key para usar con el LoadingContext */
+  loadingKey?: string
+  containerHeight?: number
 }
 
-export default function CoinsBarChart({ items, className, maxValue }: CoinsBarChartProps) {
+export default function CoinsBarChart({ 
+  items, 
+  className, 
+  maxValue,
+  isLoading: isLoadingProp,
+  loadingKey,
+  containerHeight = 180,
+}: CoinsBarChartProps) {
+  const { isLoading: isLoadingContext } = useLoading()
+  const isLoading = loadingKey ? isLoadingContext(loadingKey) : (isLoadingProp ?? false)
+
   const config = React.useMemo(() => {
     const cfg: Record<string, { label: string; color?: string }> = {}
 
@@ -64,13 +81,21 @@ export default function CoinsBarChart({ items, className, maxValue }: CoinsBarCh
   const maxFromItems = Math.max(0, ...items.map((i) => i.value))
   const domainMax = Math.max(1, maxValue ?? maxFromItems)
 
+  if (isLoading) {
+    return (
+      <div className={twMerge(className)} style={{ height: containerHeight }}>
+        <CoinsLoader />
+      </div>
+    )
+  }
+
   return (
     <div className={twMerge(className)}>
       <BarChart
         config={config}
         data={data}
         dataKey="label"
-        containerHeight={180}
+        containerHeight={containerHeight}
         yAxisProps={{ domain: [0, domainMax] }}
       />
     </div>

@@ -28,6 +28,7 @@ import CoinsMonthPicker from "@/components/coins/coins-month-picker.component";
 import CoinsBarChart from "@/components/coins/coins-bar-chart.component";
 import CoinsPieChart from "@/components/coins/coins-pie-chart.component";
 import CoinsLineChart from "@/components/coins/coins-line-chart.component";
+import { useLoading } from "@/context/loading.context";
 
 function currentMonthValue(now = new Date()) {
   const y = now.getFullYear();
@@ -78,6 +79,7 @@ function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
 export default function AdminDashboard() {
   const { useSession } = authClient;
   const sessionQuery = useSession();
+  const { setLoading, isLoading: isLoadingContext } = useLoading();
 
   const data = (sessionQuery as any)?.data;
   const session = (data?.session ?? data) as any;
@@ -101,7 +103,6 @@ export default function AdminDashboard() {
     ApartmentSchedulingCount[]
   >([]);
 
-  const [metricsLoading, setMetricsLoading] = React.useState(false);
   const [metricsError, setMetricsError] = React.useState<string | null>(null);
 
   const activeBuildingFromList = React.useMemo(() => {
@@ -127,7 +128,7 @@ export default function AdminDashboard() {
         return;
       }
 
-      setMetricsLoading(true);
+      setLoading("metrics", true);
       setMetricsError(null);
 
       try {
@@ -172,7 +173,7 @@ export default function AdminDashboard() {
         setMetricsError("No se pudieron cargar las métricas");
       } finally {
         if (cancelled) return;
-        setMetricsLoading(false);
+        setLoading("metrics", false);
       }
     }
 
@@ -280,39 +281,13 @@ export default function AdminDashboard() {
 
           {/* Grid tipo Masonry */}
           <div className="grid gap-4 auto-rows-auto sm:grid-cols-2 lg:grid-cols-3">
-            {/* Apartamentos */}
-            <CoinsCard>
-              <CoinsCardHeader
-                title="Apartamentos"
-                description="Total en el edificio"
-              />
-              <CoinsCardContent>
-                <div className="text-3xl font-semibold">
-                  {metricsLoading ? "—" : apartmentsCount}
-                </div>
-              </CoinsCardContent>
-            </CoinsCard>
 
-            {/* Agendamientos */}
-            <CoinsCard>
-              <CoinsCardHeader
-                title="Agendamientos"
-                description={`Total en ${month}`}
-              />
-              <CoinsCardContent>
-                <div className="text-3xl font-semibold">
-                  {metricsLoading ? "—" : totalSchedulings}
-                </div>
-              </CoinsCardContent>
-            </CoinsCard>
-
-            {/* Distribución de Reservas (Pie) */}
             <CoinsCard className="sm:col-span-2 lg:col-span-1 lg:row-span-2">
               <CoinsCardHeader
                 title="Distribución"
-                description="% por apartamento"
+                description="Cantidad de agendamientos"
               />
-              <CoinsCardContent>
+              <CoinsCardContent className="flex flex-col justify-center">
                 <CoinsPieChart
                   items={apartmentSchedulings.slice(0, 10).map((item, idx) => ({
                     name: item.apartmentName,
@@ -320,37 +295,29 @@ export default function AdminDashboard() {
                   }))}
                   containerHeight={280}
                   middleLabel="Agendamientos"
+                  loadingKey="metrics"
                 />
               </CoinsCardContent>
             </CoinsCard>
 
             {/* Agendamientos por Apartamento (Barras) */}
-            <CoinsCard className="sm:col-span-2 lg:row-span-2 h-min">
+            <CoinsCard className="sm:col-span-2 lg:col-span-2 lg:row-span-2">
               <CoinsCardHeader
                 title="Por Apartamento"
                 description="Cantidad de reservas"
               />
-              <CoinsCardContent className="h-min">
-                {metricsLoading ? (
-                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
-                    Cargando...
-                  </div>
-                ) : apartmentSchedulings.length === 0 ? (
-                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
-                    Sin agendamientos
-                  </div>
-                ) : (
-                  <CoinsBarChart
-                    items={apartmentSchedulings.map((item, idx) => ({
-                      label: item.apartmentName,
-                      value: item.count,
-                      colorVar: `--chart-${(idx % 5) + 1}` as any,
-                    }))}
-                    maxValue={Math.max(
+              <CoinsCardContent className="h-full flex flex-col justify-center">
+                <CoinsBarChart
+                  items={apartmentSchedulings.map((item, idx) => ({
+                    label: item.apartmentName,
+                    value: item.count,
+                    colorVar: `--chart-${(idx % 5) + 1}` as any,
+                  }))}
+                  maxValue={Math.max(
                       ...apartmentSchedulings.map((a) => a.count)
                     )}
+                    loadingKey="metrics"
                   />
-                )}
               </CoinsCardContent>
             </CoinsCard>
 
