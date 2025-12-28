@@ -35,7 +35,10 @@ function currentMonthValue(now = new Date()) {
   return `${y}-${m}`;
 }
 
-function monthToUtcRange(month: string): { startDatetime: string; endDatetime: string } {
+function monthToUtcRange(month: string): {
+  startDatetime: string;
+  endDatetime: string;
+} {
   const [y, m] = month.split("-").map((v) => Number(v));
   if (!y || !m || m < 1 || m > 12) {
     throw new Error("Invalid month format. Expected YYYY-MM");
@@ -94,8 +97,10 @@ export default function AdminDashboard() {
 
   const [apartmentsCount, setApartmentsCount] = React.useState<number>(0);
   const [totalSchedulings, setTotalSchedulings] = React.useState<number>(0);
-  const [apartmentSchedulings, setApartmentSchedulings] = React.useState<ApartmentSchedulingCount[]>([]);
-  
+  const [apartmentSchedulings, setApartmentSchedulings] = React.useState<
+    ApartmentSchedulingCount[]
+  >([]);
+
   const [metricsLoading, setMetricsLoading] = React.useState(false);
   const [metricsError, setMetricsError] = React.useState<string | null>(null);
 
@@ -127,29 +132,35 @@ export default function AdminDashboard() {
 
       try {
         const range = monthToUtcRange(month);
-        
-        const [apartmentsRes, schedulingsCountRes, apartmentSchedulingsRes] = await Promise.all([
-          getApartmentsCountByBuildingId(selectedBuilding.id),
-          getSchedulingsCountByBuildingIdAndRange({
-            buildingId: selectedBuilding.id,
-            startDatetime: range.startDatetime,
-            endDatetime: range.endDatetime,
-          }),
-          getSchedulingsByApartmentForMonth({
-            buildingId: selectedBuilding.id,
-            month: month,
-          }),
-        ]);
+
+        const [apartmentsRes, schedulingsCountRes, apartmentSchedulingsRes] =
+          await Promise.all([
+            getApartmentsCountByBuildingId(selectedBuilding.id),
+            getSchedulingsCountByBuildingIdAndRange({
+              buildingId: selectedBuilding.id,
+              startDatetime: range.startDatetime,
+              endDatetime: range.endDatetime,
+            }),
+            getSchedulingsByApartmentForMonth({
+              buildingId: selectedBuilding.id,
+              month: month,
+            }),
+          ]);
 
         if (cancelled) return;
 
         if (!apartmentsRes.success) {
-          setMetricsError(apartmentsRes.message || "No se pudieron cargar las métricas");
+          setMetricsError(
+            apartmentsRes.message || "No se pudieron cargar las métricas"
+          );
           return;
         }
 
         if (!schedulingsCountRes.success) {
-          setMetricsError(schedulingsCountRes.message || "No se pudieron cargar los agendamientos");
+          setMetricsError(
+            schedulingsCountRes.message ||
+              "No se pudieron cargar los agendamientos"
+          );
           return;
         }
 
@@ -254,7 +265,11 @@ export default function AdminDashboard() {
                 Visualiza los agendamientos y estadísticas del mes seleccionado
               </p>
             </div>
-            <CoinsMonthPicker className="w-min" value={month} onChange={setMonth} />
+            <CoinsMonthPicker
+              className="w-min"
+              value={month}
+              onChange={setMonth}
+            />
           </div>
 
           {metricsError ? (
@@ -298,24 +313,14 @@ export default function AdminDashboard() {
                 description="% por apartamento"
               />
               <CoinsCardContent>
-                {metricsLoading ? (
-                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
-                    Cargando...
-                  </div>
-                ) : apartmentSchedulings.length === 0 ? (
-                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
-                    Sin agendamientos
-                  </div>
-                ) : (
-                  <CoinsPieChart
-                    items={apartmentSchedulings.slice(0, 10).map((item, idx) => ({
-                      name: item.apartmentName,
-                      value: item.count,
-                    }))}
-                    containerHeight={280}
-                    legendNameKey="name"
-                  />
-                )}
+                <CoinsPieChart
+                  items={apartmentSchedulings.slice(0, 10).map((item, idx) => ({
+                    name: item.apartmentName,
+                    value: item.count,
+                  }))}
+                  containerHeight={280}
+                  middleLabel="Agendamientos"
+                />
               </CoinsCardContent>
             </CoinsCard>
 
@@ -341,7 +346,9 @@ export default function AdminDashboard() {
                       value: item.count,
                       colorVar: `--chart-${(idx % 5) + 1}` as any,
                     }))}
-                    maxValue={Math.max(...apartmentSchedulings.map(a => a.count))}
+                    maxValue={Math.max(
+                      ...apartmentSchedulings.map((a) => a.count)
+                    )}
                   />
                 )}
               </CoinsCardContent>
