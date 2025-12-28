@@ -20,6 +20,7 @@ import {
 } from "@/datasource/coins-control.datasource";
 import type { Building } from "@/types/auth-types.entity";
 import { DoorOpenIcon } from "lucide-react";
+import { UseDialogContext } from "@/context/dialog.context";
 
 // Función temporal que simula abrir la puerta
 async function openDoorTemp(apartmentId: number | string): Promise<boolean> {
@@ -33,6 +34,7 @@ export default function ApartamentosView() {
   const { useSession } = authClient;
   const sessionQuery = useSession();
   const { setLoading, isLoading: isLoadingContext } = useLoading();
+  const { showYesNoDialog, openDialog } = UseDialogContext();
 
   const data = (sessionQuery as any)?.data;
   const session = (data?.session ?? data) as any;
@@ -115,6 +117,46 @@ export default function ApartamentosView() {
     }
   };
 
+  // Botón de abrir puerta con "hold to confirm"
+  function OpenDoorHoldButton({ onConfirm, isLoading }: { onConfirm: () => void, isLoading: boolean }) {
+    const [hold, setHold] = React.useState(false);
+    const [progress, setProgress] = React.useState(0);
+    const holdTime = 2000; // ms
+    React.useEffect(() => {
+      let timer: NodeJS.Timeout;
+      if (hold) {
+        const start = Date.now();
+        timer = setInterval(() => {
+          const elapsed = Date.now() - start;
+          setProgress(Math.min(100, (elapsed / holdTime) * 100));
+          if (elapsed >= holdTime) {
+            setHold(false);
+            setProgress(0);
+            onConfirm();
+            clearInterval(timer);
+          }
+        }, 16);
+      } else {
+        setProgress(0);
+      }
+      return () => clearInterval(timer);
+    }, [hold, onConfirm]);
+    return (
+      <button
+        className="relative w-full py-2 px-4 rounded bg-primary text-white font-semibold disabled:opacity-60"
+        disabled={isLoading}
+        onMouseDown={() => setHold(true)}
+        onMouseUp={() => setHold(false)}
+        onMouseLeave={() => setHold(false)}
+        onTouchStart={() => setHold(true)}
+        onTouchEnd={() => setHold(false)}
+      >
+        {isLoading ? "Abriendo..." : `Dejar presionado para abrir (${Math.round(progress)}%)`}
+        <span className="absolute left-0 bottom-0 h-1 bg-green-500" style={{ width: `${progress}%` }} />
+      </button>
+    );
+  }
+
   const columns: CoinsTableColumn<ApartmentListItem>[] = [
     {
       id: "id",
@@ -163,14 +205,49 @@ export default function ApartamentosView() {
       id: "actions",
       header: "Acciones",
       cell: (row: ApartmentListItem) => (
-        <CoinsButton
-          variant="outline"
-          onClick={() => handleOpenDoor(row.id)}
-          isLoading={isLoadingContext(`door-${row.id}`)}
-        >
-          <DoorOpenIcon className="w-4 h-4 mr-2" />
-          Abrir Puerta
-        </CoinsButton>
+        <div className="flex gap-2 flex-wrap">
+          {row.state ? (
+            <CoinsButton
+              variant="outline"
+              onClick={() => showYesNoDialog({
+                title: `¿Inactivar apartamento ${row.name}?`,
+                description: "Esta acción lo dejará inactivo.",
+                handleYes: async () => {/* TODO: lógica real */},
+                handleNo: () => {},
+              })}
+            >
+              Inactivar
+            </CoinsButton>
+          ) : (
+            <CoinsButton
+              variant="outline"
+              onClick={() => showYesNoDialog({
+                title: `¿Activar apartamento ${row.name}?`,
+                description: "Esta acción lo dejará activo.",
+                handleYes: async () => {/* TODO: lógica real */},
+                handleNo: () => {},
+              })}
+            >
+              Activar
+            </CoinsButton>
+          )}
+          <CoinsButton
+            variant="outline"
+            onClick={() => openDialog({
+              title: `Abrir puerta de ${row.name}`,
+              content: (
+                <OpenDoorHoldButton
+                  isLoading={isLoadingContext(`door-${row.id}`)}
+                  onConfirm={() => handleOpenDoor(row.id)}
+                />
+              ),
+            })}
+            isLoading={isLoadingContext(`door-${row.id}`)}
+          >
+            <DoorOpenIcon className="w-4 h-4 mr-2" />
+            Abrir Puerta
+          </CoinsButton>
+        </div>
       ),
     },
   ];
