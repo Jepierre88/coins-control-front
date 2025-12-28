@@ -143,6 +143,7 @@ export default function ApartamentosView() {
       id: "address",
       header: "Nombre",
       cell: (row: ApartmentListItem) => row.address || "—",
+      isRowHeader: true,
     },
     {
       id: "isActive",
