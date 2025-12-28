@@ -177,6 +177,7 @@ export default function ApartamentosView() {
         label: "Abrir Puerta",
         icon: DoorOpenIcon,
         id: "open-door",
+        variantMobile: "primary",
         onClick: (row: ApartmentListItem) => openDialog({
             title: `Abrir puerta de ${row.name}`,
             content: (
@@ -190,6 +191,7 @@ export default function ApartamentosView() {
       {
         label: "Inactivar",
         id: "deactivate",
+        variantMobile: "secondary",
         isHidden: (row) => !row.isActive,
         icon: X,
         onClick: (row: ApartmentListItem) => showYesNoDialog({
@@ -202,6 +204,7 @@ export default function ApartamentosView() {
         {
         label: "Activar",
         id: "activate",
+        variantMobile: "outline",
         isHidden: (row) => row.isActive,
         icon: Activity,
         onClick: (row: ApartmentListItem) => showYesNoDialog({
