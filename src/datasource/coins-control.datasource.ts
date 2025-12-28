@@ -316,9 +316,16 @@ export async function getSchedulingsByApartmentForMonth(args: {
 }
 
 export type ApartmentListItem = {
-    id?: number;
-    name?: string;
-    buildingId?: number;
+    id: number;
+    name: string;
+    address?: string | null;
+    description?: string | null;
+    state: boolean;
+    isActive: boolean;
+    buildingId: number;
+    staysId?: string | null;
+    useDigitCode: boolean;
+    useQRCode: boolean;
 };
 
 export async function getApartmentsByBuildingId(
