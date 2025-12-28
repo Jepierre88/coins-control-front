@@ -67,14 +67,19 @@ function mask(value?: string | null) {
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] gap-x-4 gap-y-1">
+    <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-x-4 gap-y-1">
       <div className="text-muted-fg text-sm/6">{label}</div>
-      <div className="text-sm/6">
-        {value ?? <span className="text-muted-fg">—</span>}
+
+      {/* 👇 clave: min-w-0 + break/truncate */}
+      <div className="text-sm/6 min-w-0">
+        <div className="min-w-0 break-words">
+          {value ?? <span className="text-muted-fg">—</span>}
+        </div>
       </div>
     </div>
-  );
+  )
 }
+
 
 export default function AdminDashboard() {
   const { useSession } = authClient;
@@ -306,6 +311,7 @@ export default function AdminDashboard() {
                   }}
                 />
                 
+                
                 {selectedSlice && (
                   <div className="mt-4 p-4 rounded-lg border bg-muted/50">
                     <div className="space-y-2">
@@ -328,7 +334,6 @@ export default function AdminDashboard() {
               </CoinsCardContent>
             </CoinsCard>
 
-            {/* Agendamientos por Apartamento (Barras) */}
             <CoinsCard className="sm:col-span-2 lg:col-span-2 lg:row-span-2">
               <CoinsCardHeader
                 title="Por Apartamento"
@@ -349,7 +354,6 @@ export default function AdminDashboard() {
               </CoinsCardContent>
             </CoinsCard>
 
-            {/* Detalles del Building */}
             <CoinsCard className="sm:col-span-2 h-min">
               <CoinsCardHeader
                 title="Detalles"
@@ -385,7 +389,6 @@ export default function AdminDashboard() {
               </CoinsCardContent>
             </CoinsCard>
 
-            {/* Conexión */}
             <CoinsCard>
               <CoinsCardHeader
                 title="Conexión"
@@ -413,15 +416,6 @@ export default function AdminDashboard() {
                   }
                 />
               </CoinsCardContent>
-              <CoinsCardFooter>
-                <CoinsButton
-                  variant="outline"
-                  type="button"
-                  onClick={() => (window.location.href = "/")}
-                >
-                  Ir al inicio
-                </CoinsButton>
-              </CoinsCardFooter>
             </CoinsCard>
           </div>
         </div>

@@ -6,7 +6,7 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     <>
       <AppNavbar />
 
-      <main>{children}</main>
+      <main className="p-2">{children}</main>
     </>
   );
 }

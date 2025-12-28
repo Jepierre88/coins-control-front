@@ -46,7 +46,7 @@ export default function AppNavbar(props: NavbarProps) {
           <Link
             className="flex items-center gap-x-2 font-medium"
             aria-label="Goto documentation of Navbar"
-            href="/docs/components/layouts/navbar"
+            href="/admin"
           >
             <Avatar
               isSquare
