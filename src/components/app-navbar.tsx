@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator"
 import { UserMenu } from "@/components/user-menu"
 import CoinsBuildingSelect from "@/components/coins/coins-building-select.component"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import { usePathname } from "next/navigation"
 
 const categories = [
   { id: 1, label: "Electronics", url: "#" },
@@ -35,6 +36,8 @@ const categories = [
 ]
 
 export default function AppNavbar(props: NavbarProps) {
+  const pathname = usePathname()
+  
   return (
     <NavbarProvider>
       <div className="relative">
@@ -58,10 +61,10 @@ export default function AppNavbar(props: NavbarProps) {
         </NavbarStart>
         <NavbarGap />
         <NavbarSection>
-          <NavbarItem href="/admin" isCurrent>
+          <NavbarItem href="/admin" isCurrent={pathname === "/admin"}>
             Inicio
           </NavbarItem>
-          <NavbarItem href="/admin/agendamientos">
+          <NavbarItem href="/admin/agendamientos" isCurrent={pathname?.startsWith("/admin/agendamientos")}>
             Agendamientos
           </NavbarItem>
           {/* <Menu>

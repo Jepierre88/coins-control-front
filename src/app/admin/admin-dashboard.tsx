@@ -229,7 +229,7 @@ export default function AdminDashboard() {
     <Container className="py-8" constrained>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Heading level={1}>Admin</Heading>
+          <Heading level={1}>Métricas</Heading>
           <div className="text-muted-fg text-sm/6">
             {isLoading
               ? "Cargando sesión…"
@@ -301,28 +301,7 @@ export default function AdminDashboard() {
       {!error && selectedBuilding ? (
         <div className="space-y-6">
           <CoinsCard>
-            <CoinsCardHeader title="Métricas" className="flex justify-between">
-              <CoinsTabs
-                selectedKey={filterMode}
-                onSelectionChange={(key) =>
-                  setFilterMode(String(key) as FilterMode)
-                }
-                className="w-min"
-              >
-                <CoinsTabsList
-                  aria-label="Filtro"
-                  items={[
-                    { id: "month", label: "Mes" },
-                    { id: "range", label: "Rango" },
-                    { id: "year", label: "Año" },
-                  ]}
-                >
-                  {(item) => <CoinsTab id={item.id}>{item.label}</CoinsTab>}
-                </CoinsTabsList>
-              </CoinsTabs>
-            </CoinsCardHeader>
-            <CoinsCardContent className="space-y-4">
-              <div className="flex items-end gap-4 overflow-x-auto">
+            <CoinsCardHeader className="flex justify-between items-center">
                 <div className="w-min">
                   {filterMode === "month" ? (
                     <CoinsMonthPicker className="w-min" value={month} onChange={setMonth} />
@@ -356,6 +335,27 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
+              <CoinsTabs
+                selectedKey={filterMode}
+                onSelectionChange={(key) =>
+                  setFilterMode(String(key) as FilterMode)
+                }
+                className="w-min"
+              >
+                <CoinsTabsList
+                  aria-label="Filtro"
+                  items={[
+                    { id: "month", label: "Mes" },
+                    { id: "range", label: "Rango" },
+                    { id: "year", label: "Año" },
+                  ]}
+                >
+                  {(item) => <CoinsTab id={item.id}>{item.label}</CoinsTab>}
+                </CoinsTabsList>
+              </CoinsTabs>
+            </CoinsCardHeader>
+            <CoinsCardContent className="space-y-4">
+              <div className="flex items-end gap-4 overflow-x-auto">
 
                 <div className="min-w-60 flex-1">
                   {metricsError ? (
