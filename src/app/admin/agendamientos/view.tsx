@@ -24,7 +24,9 @@ import {
   type ApartmentListItem,
   type SchedulingListItem,
 } from "@/datasource/coins-control.datasource"
-import { PlusIcon } from "lucide-react"
+import { PlusIcon, QrCodeIcon } from "lucide-react"
+import { SchedulingQrDialog } from "@/components/coins/agendamientos/scheduling-qr-dialog.component"
+import { getSchedulingAccessDataById } from "@/datasource/coins-control.datasource"
 
 function buildHref(pathname: string, current: URLSearchParams, patch: Record<string, string | null>) {
   const next = new URLSearchParams(current)
@@ -94,7 +96,7 @@ export default function AgendamientosView() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { openDialog } = UseDialogContext()
+
 
   const defaultMonthRange = React.useMemo(() => currentMonthDateRange(), [])
 
@@ -218,6 +220,8 @@ export default function AgendamientosView() {
     }
   }, [selectedBuildingId, page, pageSize, apartmentId, startDate, endDate, state])
 
+  const { openDialog } = UseDialogContext()
+
   const columns = React.useMemo<Array<CoinsTableColumn<SchedulingListItem>>>(
     () => [
       {
@@ -248,8 +252,41 @@ export default function AgendamientosView() {
           return <CoinsBadge intent={stateToIntent(it.state)}>{stateToEsLabel(it.state)}</CoinsBadge>
         },
       },
+      // ...existing columns...
+      {
+        id: "qr",
+        header: "QR / Código",
+        cell: (it) => (
+          <CoinsButton
+            variant="outline"
+            startIcon={QrCodeIcon}
+            onClick={async () => {
+              // Fetch live access data
+              const res = await getSchedulingAccessDataById(Number(it.id))
+              openDialog({
+                title: "QR y código de acceso",
+                description: "Escanea o comparte el QR y el código de acceso.",
+                content: (
+                  <SchedulingQrDialog
+                    qrValue={res.data?.qr || String(it.id ?? "")}
+                    code={res.data?.code}
+                    onShare={() => {
+                      const text = `QR: ${(res.data?.qr ?? it.id) ?? "-"}\nCódigo: ${res.data?.code ?? "-"}`;
+                      navigator.clipboard.writeText(text)
+                        .then(() => alert("Copiado al portapapeles"))
+                        .catch(() => alert("No se pudo copiar"));
+                    }}
+                  />
+                ),
+              })
+            }}
+          >
+            Ver QR
+          </CoinsButton>
+        ),
+      },
     ],
-    [],
+    [openDialog],
   )
 
   React.useEffect(() => {

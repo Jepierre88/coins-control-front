@@ -67,6 +67,9 @@ export default function AppNavbar(props: NavbarProps) {
           <NavbarItem href="/admin/agendamientos" isCurrent={pathname?.startsWith("/admin/agendamientos")}>
             Agendamientos
           </NavbarItem>
+          <NavbarItem href="/admin/apartamentos" isCurrent={pathname?.startsWith("/admin/apartamentos")}>
+            Apartamentos
+          </NavbarItem>
           {/* <Menu>
             <NavbarItem>
               Categories

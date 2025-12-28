@@ -1,4 +1,5 @@
 "use server"
+
 import { createMainApi, mainApi } from "@/lib/axios-instance";
 import { ActionResponseEntity } from "@/types/action-response.entity";
 import { Building } from "@/types/auth-types.entity";
@@ -35,6 +36,35 @@ function monthToUtcRange(month: string): { startDatetime: string; endDatetime: s
     const end = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
 
     return { startDatetime: start.toISOString(), endDatetime: end.toISOString() };
+}
+
+export async function getSchedulingAccessDataById(
+    schedulingId: number,
+    externalToken?: string
+): Promise<ActionResponseEntity<{ code?: string; qr?: string }>> {
+    try {
+        const api = externalToken ? createMainApi({ externalToken }) : mainApi;
+        // Include the related QR in the response
+        const response = await api.get<any>(`/schedulings/${schedulingId}`, {
+            params: {
+                filter: { include: ["qr"] },
+            },
+        });
+        const scheduling = response.data;
+        return {
+            success: true,
+            message: "Datos de acceso obtenidos con éxito",
+            data: {
+                code: scheduling.keyboardPwd,
+                qr: scheduling.qr?.code,
+            },
+        };
+    } catch {
+        return {
+            success: false,
+            message: "No se pudieron obtener los datos de acceso.",
+        };
+    }
 }
 
 export async function getBuildingsByHoldingId(

@@ -17,6 +17,7 @@ import {
   GenerateSchedulingSchema,
   type GenerateSchedulingSchemaType,
 } from "@/core/forms/schemas/generate-scheduling-schema"
+import SchedulingQrDialog from "@/components/coins/agendamientos/scheduling-qr-dialog.component"
 
 type Props = {
   buildingId: string | number
@@ -37,7 +38,7 @@ export default function GenerateSchedulingDialog({
   createdBy,
 }: Props) {
   const router = useRouter()
-  const { closeDialog } = UseDialogContext()
+  const { closeDialog, openDialog } = UseDialogContext()
 
   const defaultStart = React.useMemo(() => toDatetimeLocal(new Date(Date.now() + 60_000)), [])
   const defaultEnd = React.useMemo(() => toDatetimeLocal(new Date(Date.now() + 24 * 60 * 60_000)), [])
@@ -107,7 +108,25 @@ export default function GenerateSchedulingDialog({
         return
       }
 
-      closeDialog()
+      // Mostrar QR y código en el CustomDialog
+      openDialog({
+        title: "Agendamiento generado",
+        description: "Comparte el QR y el código de acceso con tu visitante.",
+        content: (
+          <SchedulingQrDialog
+              qrValue={String(res.data.schedulingId)}
+              code={res.data.keyboardPwd}
+              onShare={() => {
+                // Compartir QR y código (copiar al portapapeles)
+                const text = `QR: ${res.data?.schedulingId ?? "-"}\nCódigo: ${res.data?.keyboardPwd ?? "-"}`;
+                navigator.clipboard.writeText(text)
+                  .then(() => alert("Copiado al portapapeles"))
+                  .catch(() => alert("No se pudo copiar"));
+              }}
+              />
+        ),
+      })
+
       router.refresh()
     } catch {
       form.setError("root", { message: "No se pudo generar el agendamiento." })
