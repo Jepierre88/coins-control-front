@@ -21,6 +21,8 @@ import {
 import type { Building } from "@/types/auth-types.entity";
 import { DoorOpenIcon } from "lucide-react";
 import { UseDialogContext } from "@/context/dialog.context";
+import { toast } from "sonner";
+import CoinsRadialHoldButton from "@/components/coins/coins-radial-hold-button.component";
 
 // Función temporal que simula abrir la puerta
 async function openDoorTemp(apartmentId: number | string): Promise<boolean> {
@@ -103,57 +105,36 @@ export default function ApartamentosView() {
     };
   }, [selectedBuilding?.id]);
 
+  const { closeDialog } = UseDialogContext();
   const handleOpenDoor = async (apartmentId: number) => {
     try {
       setLoading(`door-${apartmentId}`, true);
       const result = await openDoorTemp(apartmentId);
       if (result) {
-        console.log(`Puerta del apartamento ${apartmentId} abierta`);
+        toast.success("¡Puerta abierta exitosamente!");
+        closeDialog();
       }
     } catch (error) {
       console.error("Error al abrir la puerta:", error);
+      toast.error("Error al abrir la puerta");
     } finally {
       setLoading(`door-${apartmentId}`, false);
     }
   };
 
   // Botón de abrir puerta con "hold to confirm"
-  function OpenDoorHoldButton({ onConfirm, isLoading }: { onConfirm: () => void, isLoading: boolean }) {
-    const [hold, setHold] = React.useState(false);
-    const [progress, setProgress] = React.useState(0);
-    const holdTime = 2000; // ms
-    React.useEffect(() => {
-      let timer: NodeJS.Timeout;
-      if (hold) {
-        const start = Date.now();
-        timer = setInterval(() => {
-          const elapsed = Date.now() - start;
-          setProgress(Math.min(100, (elapsed / holdTime) * 100));
-          if (elapsed >= holdTime) {
-            setHold(false);
-            setProgress(0);
-            onConfirm();
-            clearInterval(timer);
-          }
-        }, 16);
-      } else {
-        setProgress(0);
-      }
-      return () => clearInterval(timer);
-    }, [hold, onConfirm]);
+
+  function OpenDoorHoldButton({ onConfirm, loadingKey }: { onConfirm: () => void, loadingKey?: string }) {
     return (
-      <button
-        className="relative w-full py-2 px-4 rounded bg-primary text-white font-semibold disabled:opacity-60"
-        disabled={isLoading}
-        onMouseDown={() => setHold(true)}
-        onMouseUp={() => setHold(false)}
-        onMouseLeave={() => setHold(false)}
-        onTouchStart={() => setHold(true)}
-        onTouchEnd={() => setHold(false)}
-      >
-        {isLoading ? "Abriendo..." : `Dejar presionado para abrir (${Math.round(progress)}%)`}
-        <span className="absolute left-0 bottom-0 h-1 bg-green-500" style={{ width: `${progress}%` }} />
-      </button>
+      <CoinsRadialHoldButton
+        duration={2000}
+        onComplete={onConfirm}
+        className="w-full"
+        anchorStrength="strong"
+        color="#22c55e"
+        bgColor="#e5e7eb"
+        loadingKey={loadingKey}
+      />
     );
   }
 
@@ -226,12 +207,11 @@ export default function ApartamentosView() {
               title: `Abrir puerta de ${row.name}`,
               content: (
                 <OpenDoorHoldButton
-                  isLoading={isLoadingContext(`door-${row.id}`)}
+                  loadingKey={`door-${row.id}`}
                   onConfirm={() => handleOpenDoor(row.id)}
                 />
               ),
             })}
-            isLoading={isLoadingContext(`door-${row.id}`)}
           >
             <DoorOpenIcon className="w-4 h-4 mr-2" />
             Abrir Puerta
