@@ -408,7 +408,6 @@ export default function AgendamientosView() {
                         <div className="space-y-2">
                           <div className="text-sm/6 text-muted-fg">Invitado</div>
                           <CoinsInput
-                            className="w-full border rounded px-2 py-1 text-sm"
                             type="text"
                             placeholder="Nombre o apellido"
                             value={draftGuestName}
