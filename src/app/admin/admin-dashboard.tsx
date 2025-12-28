@@ -290,7 +290,7 @@ export default function AdminDashboard() {
             <CoinsCard className="sm:col-span-2 lg:col-span-1 lg:row-span-2">
               <CoinsCardHeader
                 title="Distribución"
-                description="Cantidad de agendamientos"
+                description="Porcentaje de agendamientos"
               />
               <CoinsCardContent className="flex flex-col justify-center">
                 <CoinsPieChart
