@@ -103,6 +103,11 @@ export default function AdminDashboard() {
     ApartmentSchedulingCount[]
   >([]);
 
+  const [selectedSlice, setSelectedSlice] = React.useState<{
+    name: string;
+    value: number;
+  } | null>(null);
+
   const [metricsError, setMetricsError] = React.useState<string | null>(null);
 
   const activeBuildingFromList = React.useMemo(() => {
@@ -296,7 +301,30 @@ export default function AdminDashboard() {
                   containerHeight={280}
                   middleLabel="Agendamientos"
                   loadingKey="metrics"
+                  onSliceClick={(item) => {
+                    setSelectedSlice(item);
+                  }}
                 />
+                
+                {selectedSlice && (
+                  <div className="mt-4 p-4 rounded-lg border bg-muted/50">
+                    <div className="space-y-2">
+                      <div className="font-semibold text-sm">
+                        Apartamento Seleccionado
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="text-muted-foreground">Nombre:</div>
+                        <div className="font-medium">{selectedSlice.name}</div>
+                        <div className="text-muted-foreground">Agendamientos:</div>
+                        <div className="font-medium">{selectedSlice.value}</div>
+                        <div className="text-muted-foreground">Porcentaje:</div>
+                        <div className="font-medium">
+                          {((selectedSlice.value / totalSchedulings) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CoinsCardContent>
             </CoinsCard>
 

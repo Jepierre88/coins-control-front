@@ -30,7 +30,7 @@ export default function CoinsBarChart({
   maxValue,
   isLoading: isLoadingProp,
   loadingKey,
-  containerHeight = 180,
+  containerHeight = 200,
 }: CoinsBarChartProps) {
   const { isLoading: isLoadingContext } = useLoading()
   const isLoading = loadingKey ? isLoadingContext(loadingKey) : (isLoadingProp ?? false)
