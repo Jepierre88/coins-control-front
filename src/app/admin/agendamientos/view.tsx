@@ -12,7 +12,7 @@ import CoinsBadge, { type CoinsBadgeIntent } from "@/components/coins/coins-badg
 import CoinsDatePicker from "@/components/coins/coins-date-picker.component"
 import CoinsCard, { CoinsCardContent, CoinsCardHeader } from "@/components/coins/coins-card.component"
 import CoinsSelect from "@/components/coins/coins-select.component"
-import { CoinsTable, type CoinsTableColumn } from "@/components/coins/coins-table.component"
+import { CoinsTable, CoinsTableActions, type CoinsTableColumn } from "@/components/coins/coins-table.component"
 import { CoinsPagination } from "@/components/coins/coins-pagination.component"
 import GenerateSchedulingDialog from "./components/generate-scheduling-dialog.component"
 import { authClient } from "@/lib/auth-client"
@@ -232,7 +232,7 @@ export default function AgendamientosView() {
 
   const { openDialog } = UseDialogContext()
 
-  const columns = React.useMemo<Array<CoinsTableColumn<SchedulingListItem>>>(
+  const columns: CoinsTableColumn<SchedulingListItem>[] = React.useMemo(
     () => [
       {
         id: "start",
@@ -262,26 +262,30 @@ export default function AgendamientosView() {
           return <CoinsBadge intent={stateToIntent(it.state)}>{stateToEsLabel(it.state)}</CoinsBadge>
         },
       },
-      // ...existing columns...
-      {
-        id: "qr",
+    ],
+    [openDialog],
+  )
+
+  const actions: CoinsTableActions<SchedulingListItem> = React.useMemo(()=>(
+    {
+      items: [        
+        {
+          id: "qr",
         header: "QR / Código",
-        cell: (it) => (
-          <CoinsButton
-            variant="outline"
-            startIcon={QrCodeIcon}
-            onClick={async () => {
-              // Fetch live access data
-              const res = await getSchedulingAccessDataById(Number(it.id))
+        label: "Ver QR / Código",
+        icon: QrCodeIcon,
+        variantMobile: "primary",
+        onClick: async (row: SchedulingListItem) => {
+              const res = await getSchedulingAccessDataById(Number(row.id))
               openDialog({
                 title: "QR y código de acceso",
                 description: "Escanea o comparte el QR y el código de acceso.",
                 content: (
                   <SchedulingQrDialog
-                    qrValue={res.data?.qr || String(it.id ?? "")}
+                    qrValue={res.data?.qr || String(row.id ?? "")}
                     code={res.data?.code}
                     onShare={() => {
-                      const text = `QR: ${(res.data?.qr ?? it.id) ?? "-"}\nCódigo: ${res.data?.code ?? "-"}`;
+                      const text = `QR: ${(res.data?.qr ?? row.id) ?? "-"}\nCódigo: ${res.data?.code ?? "-"}`;
                       navigator.clipboard.writeText(text)
                         .then(() => alert("Copiado al portapapeles"))
                         .catch(() => alert("No se pudo copiar"));
@@ -289,15 +293,11 @@ export default function AgendamientosView() {
                   />
                 ),
               })
-            }}
-          >
-            Ver QR
-          </CoinsButton>
-        ),
-      },
-    ],
-    [openDialog],
-  )
+            }
+    }
+      ]
+    }
+  ), [])
 
   React.useEffect(() => {
 
@@ -476,6 +476,7 @@ export default function AgendamientosView() {
             ariaLabel="Agendamientos"
             items={items}
             columns={columns}
+            actions={actions}
             loadingKey="schedulings-table"
             emptyState="No hay agendamientos registrados"
             getRowId={(it) => String(it.id ?? `${it.apartmentId ?? ""}-${it.start ?? ""}`)}
