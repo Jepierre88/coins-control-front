@@ -65,7 +65,7 @@ export default function CoinsCustomDialog() {
 
   return (
     <CoinsModal isOpen={isOpen} onOpenChange={handleOpenChange}>
-      <CoinsModalContent size="md" className="w-fit sm:max-w-none">
+      <CoinsModalContent size="md" className="w-fit sm:max-w-none py-2">
         <CoinsModalHeader>
           <CoinsModalTitle>{title}</CoinsModalTitle>
           {description ? <CoinsModalDescription>{description}</CoinsModalDescription> : null}

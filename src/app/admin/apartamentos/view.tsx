@@ -159,19 +159,8 @@ export default function ApartamentosView() {
 
   const columns: CoinsTableColumn<ApartmentListItem>[] = [
     {
-      id: "id",
-      header: "ID",
-      cell: (row: ApartmentListItem) => row.id,
-      isRowHeader: true,
-    },
-    {
-      id: "name",
-      header: "Nombre",
-      cell: (row: ApartmentListItem) => row.name || "—",
-    },
-    {
       id: "address",
-      header: "Dirección",
+      header: "Nombre",
       cell: (row: ApartmentListItem) => row.address || "—",
     },
     {

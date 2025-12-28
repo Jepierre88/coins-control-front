@@ -27,6 +27,7 @@ import {
 import { PlusIcon, QrCodeIcon } from "lucide-react"
 import { SchedulingQrDialog } from "@/components/coins/agendamientos/scheduling-qr-dialog.component"
 import { getSchedulingAccessDataById } from "@/datasource/coins-control.datasource"
+import CoinsInput from "@/components/coins/coins-input.component"
 
 function buildHref(pathname: string, current: URLSearchParams, patch: Record<string, string | null>) {
   const next = new URLSearchParams(current)
@@ -113,10 +114,12 @@ export default function AgendamientosView() {
   const page = parseIntParam(searchParams.get("page"), 1)
   const pageSize = parseIntParam(searchParams.get("pageSize"), 10)
 
+
   const apartmentId = searchParams.get("apartmentId") ?? ""
   const startDate = searchParams.get("startDate") ?? defaultMonthRange.startDate
   const endDate = searchParams.get("endDate") ?? defaultMonthRange.endDate
   const state = searchParams.get("state") ?? ""
+  const guestName = searchParams.get("guestName") ?? ""
 
   const [apartments, setApartments] = React.useState<ApartmentListItem[]>([])
   const [items, setItems] = React.useState<SchedulingListItem[]>([])
@@ -125,10 +128,12 @@ export default function AgendamientosView() {
   const [error, setError] = React.useState<string | null>(null)
   const { isLoading: isLoadingContext, setLoading: setLoadingContext } = useLoading()
 
+
   const [draftApartmentId, setDraftApartmentId] = React.useState(apartmentId)
   const [draftStartDate, setDraftStartDate] = React.useState(startDate)
   const [draftEndDate, setDraftEndDate] = React.useState(endDate)
   const [draftState, setDraftState] = React.useState(state)
+  const [draftGuestName, setDraftGuestName] = React.useState(guestName)
 
   // Inicializar loading al montar el componente
   React.useEffect(() => {
@@ -137,17 +142,20 @@ export default function AgendamientosView() {
     }
   }, [])
 
+
   const [debouncedApartmentId] = useDebounce(draftApartmentId, 400)
   const [debouncedStartDate] = useDebounce(draftStartDate, 400)
   const [debouncedEndDate] = useDebounce(draftEndDate, 400)
   const [debouncedState] = useDebounce(draftState, 400)
+  const [debouncedGuestName] = useDebounce(draftGuestName, 400)
 
   React.useEffect(() => {
     setDraftApartmentId(apartmentId)
     setDraftStartDate(startDate)
     setDraftEndDate(endDate)
     setDraftState(state)
-  }, [apartmentId, startDate, endDate, state])
+    setDraftGuestName(guestName)
+  }, [apartmentId, startDate, endDate, state, guestName])
 
   React.useEffect(() => {
     let cancelled = false
@@ -181,6 +189,7 @@ export default function AgendamientosView() {
       setError(null)
 
       try {
+
         const res = await getSchedulingsPage({
           buildingId: selectedBuildingId,
           page,
@@ -189,6 +198,7 @@ export default function AgendamientosView() {
           startDate: startDate || undefined,
           endDate: endDate || undefined,
           state: state || undefined,
+          guestName: guestName || undefined,
         })
 
         if (cancelled) return
@@ -290,21 +300,25 @@ export default function AgendamientosView() {
   )
 
   React.useEffect(() => {
+
     const currentApartmentId = searchParams.get("apartmentId") ?? ""
     const currentStartDate = searchParams.get("startDate") ?? ""
     const currentEndDate = searchParams.get("endDate") ?? ""
     const currentState = searchParams.get("state") ?? ""
+    const currentGuestName = searchParams.get("guestName") ?? ""
 
     const nextApartmentId = debouncedApartmentId ?? ""
     const nextStartDate = debouncedStartDate ?? ""
     const nextEndDate = debouncedEndDate ?? ""
     const nextState = debouncedState ?? ""
+    const nextGuestName = debouncedGuestName ?? ""
 
     const same =
       currentApartmentId === nextApartmentId &&
       currentStartDate === nextStartDate &&
       currentEndDate === nextEndDate &&
-      currentState === nextState
+      currentState === nextState &&
+      currentGuestName === nextGuestName
 
     if (same) return
 
@@ -314,6 +328,7 @@ export default function AgendamientosView() {
       startDate: nextStartDate ? nextStartDate : null,
       endDate: nextEndDate ? nextEndDate : null,
       state: nextState ? nextState : null,
+      guestName: nextGuestName ? nextGuestName : null,
     })
 
     router.replace(href)
@@ -322,6 +337,7 @@ export default function AgendamientosView() {
     debouncedEndDate,
     debouncedStartDate,
     debouncedState,
+    debouncedGuestName,
     pathname,
     router,
     searchParams,
@@ -388,7 +404,17 @@ export default function AgendamientosView() {
       <CoinsCard>
         <CoinsCardHeader title="Filtros" description="Filtra por apartamento, fechas y estado." />
         <CoinsCardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                        <div className="space-y-2">
+                          <div className="text-sm/6 text-muted-fg">Invitado</div>
+                          <CoinsInput
+                            className="w-full border rounded px-2 py-1 text-sm"
+                            type="text"
+                            placeholder="Nombre o apellido"
+                            value={draftGuestName}
+                            onChange={e => setDraftGuestName(e.target.value)}
+                          />
+                        </div>
             <div className="space-y-2">
               <div className="text-sm/6 text-muted-fg">Apartamento</div>
               <CoinsSelect

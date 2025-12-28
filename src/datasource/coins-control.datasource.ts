@@ -586,6 +586,7 @@ export type GetSchedulingsPageArgs = {
     startDate?: string; // YYYY-MM-DD
     endDate?: string; // YYYY-MM-DD
     state?: string;
+    guestName?: string;
 };
 
 export type PaginatedResponse<T> = {
@@ -655,6 +656,14 @@ export async function getSchedulingsPage(
             where.start = {
                 lte: dateOnlyToUtcEnd(args.endDate),
             };
+        }
+        if (args.guestName && args.guestName.trim()) {
+            // Case-insensitive partial match on name or lastName
+            const like = { like: `%${args.guestName.trim()}%`, options: 'i' };
+            where.or = [
+                { name: like },
+                { lastName: like },
+            ];
         }
 
         const [countRes, listRes] = await Promise.all([

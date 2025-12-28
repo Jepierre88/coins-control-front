@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Cargando...</div>}>
-      <AgendamientosView />
+      <AgendamientosView key={Date.now()}/>
     </Suspense>
   )
 }
