@@ -4,13 +4,12 @@ import * as React from "react";
 import { Container } from "@/components/ui/container";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
-import CoinsButton from "@/components/coins/coins-button.component";
 import CoinsBadge from "@/components/coins/coins-badge.component";
 import CoinsCard, {
   CoinsCardContent,
   CoinsCardHeader,
 } from "@/components/coins/coins-card.component";
-import { CoinsTable, type CoinsTableColumn } from "@/components/coins/coins-table.component";
+import { CoinsTable, CoinsTableActions, type CoinsTableColumn } from "@/components/coins/coins-table.component";
 import CoinsBuildingTabs from "@/components/coins/coins-building-tabs.component";
 import { authClient } from "@/lib/auth-client";
 import { useLoading } from "@/context/loading.context";
@@ -19,7 +18,7 @@ import {
   type ApartmentListItem,
 } from "@/datasource/coins-control.datasource";
 import type { Building } from "@/types/auth-types.entity";
-import { DoorOpenIcon } from "lucide-react";
+import { Activity, DoorOpenIcon, X } from "lucide-react";
 import { UseDialogContext } from "@/context/dialog.context";
 import { toast } from "sonner";
 import CoinsRadialHoldButton from "@/components/coins/coins-radial-hold-button.component";
@@ -122,8 +121,6 @@ export default function ApartamentosView() {
     }
   };
 
-  // Botón de abrir puerta con "hold to confirm"
-
   function OpenDoorHoldButton({ onConfirm, loadingKey }: { onConfirm: () => void, loadingKey?: string }) {
     return (
       <CoinsRadialHoldButton
@@ -172,55 +169,50 @@ export default function ApartamentosView() {
         </CoinsBadge>
       ),
     },
-    {
-      id: "actions",
-      header: "Acciones",
-      cell: (row: ApartmentListItem) => (
-        <div className="flex gap-2 flex-wrap">
-          {row.state ? (
-            <CoinsButton
-              variant="outline"
-              onClick={() => showYesNoDialog({
-                title: `¿Inactivar apartamento ${row.name}?`,
-                description: "Esta acción lo dejará inactivo.",
-                handleYes: async () => {/* TODO: lógica real */},
-                handleNo: () => {},
-              })}
-            >
-              Inactivar
-            </CoinsButton>
-          ) : (
-            <CoinsButton
-              variant="outline"
-              onClick={() => showYesNoDialog({
-                title: `¿Activar apartamento ${row.name}?`,
-                description: "Esta acción lo dejará activo.",
-                handleYes: async () => {/* TODO: lógica real */},
-                handleNo: () => {},
-              })}
-            >
-              Activar
-            </CoinsButton>
-          )}
-          <CoinsButton
-            variant="outline"
-            onClick={() => openDialog({
-              title: `Abrir puerta de ${row.name}`,
-              content: (
-                <OpenDoorHoldButton
-                  loadingKey={`door-${row.id}`}
-                  onConfirm={() => handleOpenDoor(row.id)}
-                />
-              ),
-            })}
-          >
-            <DoorOpenIcon className="w-4 h-4 mr-2" />
-            Abrir Puerta
-          </CoinsButton>
-        </div>
-      ),
-    },
   ];
+
+  const actions: CoinsTableActions<ApartmentListItem> = {
+    items: [
+      {
+        label: "Abrir Puerta",
+        icon: DoorOpenIcon,
+        id: "open-door",
+        onClick: (row: ApartmentListItem) => openDialog({
+            title: `Abrir puerta de ${row.name}`,
+            content: (
+              <OpenDoorHoldButton
+                loadingKey={`door-${row.id}`}
+                onConfirm={() => handleOpenDoor(row.id)}
+              />
+            ),
+          })
+      },
+      {
+        label: "Inactivar",
+        id: "deactivate",
+        isHidden: (row) => !row.isActive,
+        icon: X,
+        onClick: (row: ApartmentListItem) => showYesNoDialog({
+          title: `¿Inactivar apartamento ${row.name}?`,
+            description: "Esta acción lo dejará inactivo.",
+            handleYes: async () => {/* TODO: lógica real */},
+            handleNo: () => {},
+        }),
+      },
+        {
+        label: "Activar",
+        id: "activate",
+        isHidden: (row) => row.isActive,
+        icon: Activity,
+        onClick: (row: ApartmentListItem) => showYesNoDialog({
+          title: `¿Activar apartamento ${row.name}?`,
+            description: "Esta acción lo dejará activo.",
+            handleYes: async () => {/* TODO: lógica real */},
+            handleNo: () => {},
+        }),
+      },
+    ],
+  };
 
   return (
     <Container className="py-8" constrained>
@@ -289,6 +281,7 @@ export default function ApartamentosView() {
               <CoinsTable
                 ariaLabel="Lista de apartamentos"
                 columns={columns}
+                actions={actions}
                 items={apartments}
                 emptyState="No hay apartamentos registrados"
                 loadingKey="apartments"

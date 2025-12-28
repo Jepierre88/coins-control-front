@@ -14,6 +14,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useLoading } from "@/context/loading.context"
 import CoinsLoader from "./coins-loader.component"
 
+import { EllipsisVerticalIcon } from "@heroicons/react/24/outline"
+import {
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu"
+import { LucideIcon } from "lucide-react"
+
 // Componentes fuera del render para evitar problemas de hidratación
 function EmptyStateComponent({ message }: { message?: React.ReactNode }) {
   return (
@@ -53,14 +63,35 @@ export type CoinsTableColumn<TItem extends object> = {
   hideOnMobile?: boolean
 } & Omit<ColumnProps, "children" | "id" | "className">
 
+export type CoinsTableActionItem<TItem extends object> = {
+  id: string
+  label: React.ReactNode
+  icon?: LucideIcon
+  onClick: (item: TItem) => void
+  intent?: "danger"
+  separatorAfter?: boolean
+  isDisabled?: (item: TItem) => boolean
+  isHidden?: (item: TItem) => boolean
+}
+
+export type CoinsTableActions<TItem extends object> = {
+  header?: React.ReactNode
+  menuAriaLabel?: string
+  placement?: any
+  triggerIcon?: LucideIcon
+  /** clases para asegurar ancho mínimo (ej: "w-10") */
+  minWidthClassName?: string
+  items: CoinsTableActionItem<TItem>[]
+}
+
 export type CoinsTableProps<TItem extends object> = {
   ariaLabel: string
   items: TItem[]
   columns: Array<CoinsTableColumn<TItem>>
+  /** Nuevo: Actions como menú */
+  actions?: CoinsTableActions<TItem>
   getRowId?: (item: TItem, index: number) => string | number
   className?: string
-  /** @deprecated Use loadingKey instead */
-  isLoading?: boolean
   /** Loading key para usar con el LoadingContext */
   loadingKey?: string
   emptyState?: React.ReactNode
@@ -69,13 +100,15 @@ export type CoinsTableProps<TItem extends object> = {
   renderMobileCard?: (item: TItem, index: number) => React.ReactNode
 }
 
+const ACTIONS_COLUMN_ID = "__actions__"
+
 export function CoinsTable<TItem extends object>({
   ariaLabel,
   items,
   columns,
+  actions,
   getRowId,
   className,
-  isLoading: isLoadingProp,
   loadingKey,
   emptyState,
   loadingState,
@@ -84,7 +117,7 @@ export function CoinsTable<TItem extends object>({
   const [isMobile, setIsMobile] = React.useState(false)
   const { isLoading: isLoadingContext } = useLoading()
 
-  const isLoading = loadingKey ? isLoadingContext(loadingKey) : (isLoadingProp ?? false)
+  const isLoading = loadingKey ? isLoadingContext(loadingKey) : false
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -93,15 +126,71 @@ export function CoinsTable<TItem extends object>({
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  // Vista mobile: cards
-  if (isMobile) {
-    if (isLoading) {
-      return <CoinsLoader message={loadingState} />
+  const allColumns: Array<CoinsTableColumn<TItem>> = React.useMemo(() => {
+    if (!actions) return columns
+
+    const actionCol: CoinsTableColumn<TItem> = {
+      id: ACTIONS_COLUMN_ID,
+      header: actions.header ?? null,
+      className: [
+        actions.minWidthClassName ?? "w-10",
+        "text-right whitespace-nowrap",
+      ].join(" "),
+      cell: (item: TItem) => {
+        const visibleActions = actions.items.filter((a) => !(a.isHidden?.(item) ?? false))
+        if (visibleActions.length === 0) return null
+
+        return (
+          <div className="flex justify-end">
+            <Menu>
+              <MenuTrigger className="size-6" aria-label={actions.menuAriaLabel ?? "Actions"}>
+                {actions.triggerIcon ? <actions.triggerIcon /> : <EllipsisVerticalIcon />}
+              </MenuTrigger>
+
+              <MenuContent
+                aria-label={actions.menuAriaLabel ?? "Actions"}
+                placement={actions.placement ?? ("left top" as any)}
+              >
+                {visibleActions.map((a) => {
+                  const Icon = a.icon
+                  const disabled = a.isDisabled?.(item) ?? false
+
+                  return (
+                    <React.Fragment key={a.id}>
+                      <MenuItem
+                        intent={a.intent as any}
+                        isDisabled={disabled as any}
+                        onAction={() => {
+                          if (!disabled) a.onClick(item)
+                        }}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          {Icon ? <Icon className="size-4" /> : null}
+                          {a.label}
+                        </span>
+                      </MenuItem>
+                      {a.separatorAfter ? <MenuSeparator /> : null}
+                    </React.Fragment>
+                  )
+                })}
+              </MenuContent>
+            </Menu>
+          </div>
+        )
+      },
+      hideOnMobile: true,
+      // fuerza width mínimo en desktop (TableColumn lo usa)
+      width: "1%",
     }
 
-    if (items.length === 0) {
-      return <EmptyStateComponent message={emptyState} />
-    }
+    return [...columns, actionCol]
+  }, [columns, actions])
+
+  // Vista mobile: cards
+  if (isMobile) {
+    if (isLoading) return <CoinsLoader message={loadingState} />
+
+    if (items.length === 0) return <EmptyStateComponent message={emptyState} />
 
     return (
       <div className="space-y-3" role="list" aria-label={ariaLabel}>
@@ -116,8 +205,7 @@ export function CoinsTable<TItem extends object>({
             )
           }
 
-          // Default card: muestra todas las columnas en grid de 2 columnas
-          const visibleColumns = columns.filter(col => !col.hideOnMobile)
+          const visibleColumns = columns.filter((col) => !col.hideOnMobile)
 
           return (
             <Card key={id} role="listitem" className="transition-shadow hover:shadow-md">
@@ -134,13 +222,23 @@ export function CoinsTable<TItem extends object>({
                           {column.header}
                         </dt>
                         <dd
-                          className={`mt-1 ${isHeader ? "text-base font-semibold text-fg" : "text-sm text-fg"}`}
+                          className={`mt-1 ${
+                            isHeader ? "text-base font-semibold text-fg" : "text-sm text-fg"
+                          }`}
                         >
                           {column.cell(item)}
                         </dd>
                       </div>
                     )
                   })}
+
+                  {/* Opcional: acciones también en mobile al final */}
+                  {actions && (
+                    <div className="col-span-2 pt-2 flex justify-end">
+                      {/* Reutilizamos el mismo cell del action column */}
+                      {allColumns.find((c) => c.id === ACTIONS_COLUMN_ID)?.cell(item)}
+                    </div>
+                  )}
                 </dl>
               </CardContent>
             </Card>
@@ -153,19 +251,26 @@ export function CoinsTable<TItem extends object>({
   // Vista desktop: tabla normal
   return (
     <Table aria-label={ariaLabel} className={className}>
-      <TableHeader columns={columns}>
+      <TableHeader columns={allColumns}>
         {(col) => {
           const column = col as CoinsTableColumn<TItem>
+          const isActions = actions && column.id === ACTIONS_COLUMN_ID
+
           return (
             <TableColumn
               id={column.id}
-              isRowHeader={column.isRowHeader}
-              allowsSorting={column.allowsSorting}
-              isResizable={column.isResizable}
-              className={column.className}
-              width={column.width}
-              minWidth={column.minWidth}
-              maxWidth={column.maxWidth}
+              isRowHeader={(column as any).isRowHeader}
+              allowsSorting={(column as any).allowsSorting}
+              isResizable={(column as any).isResizable}
+              width={isActions ? "1%" : (column as any).width}
+              minWidth={isActions ? 1 : (column as any).minWidth}
+              maxWidth={isActions ? undefined : (column as any).maxWidth}
+              className={[
+                column.className,
+                isActions ? "text-right whitespace-nowrap" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               {column.header}
             </TableColumn>
@@ -175,19 +280,42 @@ export function CoinsTable<TItem extends object>({
 
       <TableBody
         items={items}
-        renderEmptyState={() => (
-          isLoading ? <CoinsLoader message={loadingState} /> : <EmptyStateComponent message={emptyState} />
-        )}
+        renderEmptyState={() =>
+          isLoading ? (
+            <CoinsLoader message={loadingState} />
+          ) : (
+            <EmptyStateComponent message={emptyState} />
+          )
+        }
       >
         {(item) => {
           const index = items.indexOf(item)
           const id = getRowId?.(item, index) ?? index
 
           return (
-            <TableRow id={id} columns={columns}>
+            <TableRow id={id} columns={allColumns}>
               {(col) => {
                 const column = col as CoinsTableColumn<TItem>
-                return <TableCell className="whitespace-nowrap">{column.cell(item)}</TableCell>
+                const isActions = actions && column.id === ACTIONS_COLUMN_ID
+
+                return (
+                  <TableCell
+                    className={[
+                      column.className ?? "whitespace-nowrap",
+                      isActions ? "text-right" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    {isActions ? (
+                      <div className="flex justify-end">
+                        {column.cell(item)}
+                      </div>
+                    ) : (
+                      column.cell(item)
+                    )}
+                  </TableCell>
+                )
               }}
             </TableRow>
           )
