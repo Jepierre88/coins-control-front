@@ -18,6 +18,12 @@ export type MonthlyCountsResponse = {
     range: { startDatetime: string; endDatetime: string };
 };
 
+export type ApartmentSchedulingCount = {
+    apartmentId: number;
+    apartmentName: string;
+    count: number;
+};
+
 function monthToUtcRange(month: string): { startDatetime: string; endDatetime: string } {
     // month: YYYY-MM
     const [y, m] = month.split("-").map((v) => Number(v));
@@ -247,6 +253,64 @@ export async function getSchedulingsMonthlyCounts(args: {
         return {
             success: false,
             message: "No se pudieron obtener los conteos mensuales.",
+        };
+    }
+}
+
+export async function getSchedulingsByApartmentForMonth(args: {
+    buildingId: string | number;
+    month: string;
+}, externalToken?: string): Promise<ActionResponseEntity<ApartmentSchedulingCount[]>> {
+    try {
+        const api = externalToken ? createMainApi({ externalToken }) : mainApi;
+        const range = monthToUtcRange(args.month);
+
+        // Obtener todos los apartamentos del edificio
+        const apartmentsRes = await getApartmentsByBuildingId(args.buildingId, externalToken);
+        if (!apartmentsRes.success || !apartmentsRes.data) {
+            return {
+                success: false,
+                message: "No se pudieron obtener los apartamentos.",
+                data: [],
+            };
+        }
+
+        // Obtener el conteo de agendamientos para cada apartamento
+        const counts = await Promise.all(
+            apartmentsRes.data.map(async (apartment) => {
+                const response = await api.get<{ count: number }>(`/schedulings/count`, {
+                    params: {
+                        where: {
+                            buildingId: Number(args.buildingId),
+                            apartmentId: apartment.id,
+                            start: {
+                                between: [range.startDatetime, range.endDatetime],
+                            },
+                        },
+                    },
+                });
+
+                return {
+                    apartmentId: apartment.id ?? 0,
+                    apartmentName: apartment.name ?? `Apto ${apartment.id}`,
+                    count: response.data.count ?? 0,
+                } satisfies ApartmentSchedulingCount;
+            })
+        );
+
+        // Filtrar apartamentos sin agendamientos y ordenar por cantidad
+        const filtered = counts.filter(c => c.count > 0).sort((a, b) => b.count - a.count);
+
+        return {
+            success: true,
+            message: "Agendamientos por apartamento obtenidos con éxito",
+            data: filtered,
+        };
+    } catch {
+        return {
+            success: false,
+            message: "No se pudieron obtener los agendamientos por apartamento.",
+            data: [],
         };
     }
 }

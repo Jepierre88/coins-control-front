@@ -19,24 +19,32 @@ import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
 import {
   getApartmentsCountByBuildingId,
-  getSchedulingsMonthlyCounts,
-  type BuildingDashboardMetrics,
+  getSchedulingsByApartmentForMonth,
+  type ApartmentSchedulingCount,
+  getSchedulingsCountByBuildingIdAndRange,
 } from "@/datasource/coins-control.datasource";
 import type { Building } from "@/types/auth-types.entity";
 import CoinsMonthPicker from "@/components/coins/coins-month-picker.component";
-import CoinsBarSeriesChart from "@/components/coins/coins-bar-series-chart.component";
+import CoinsBarChart from "@/components/coins/coins-bar-chart.component";
+import CoinsPieChart from "@/components/coins/coins-pie-chart.component";
 import CoinsLineChart from "@/components/coins/coins-line-chart.component";
-import CoinsSelect from "@/components/coins/coins-select.component";
-import {
-  CoinsTab,
-  CoinsTabs,
-  CoinsTabsList,
-} from "@/components/coins/coins-tabs.component";
 
 function currentMonthValue(now = new Date()) {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   return `${y}-${m}`;
+}
+
+function monthToUtcRange(month: string): { startDatetime: string; endDatetime: string } {
+  const [y, m] = month.split("-").map((v) => Number(v));
+  if (!y || !m || m < 1 || m > 12) {
+    throw new Error("Invalid month format. Expected YYYY-MM");
+  }
+
+  const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
+
+  return { startDatetime: start.toISOString(), endDatetime: end.toISOString() };
 }
 
 function getInitials(name?: string | null) {
@@ -52,8 +60,6 @@ function mask(value?: string | null) {
   if (value.length <= 4) return "••••";
   return `${value.slice(0, 2)}••••${value.slice(-2)}`;
 }
-
-type FilterMode = "month" | "range" | "year";
 
 function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
@@ -83,36 +89,15 @@ export default function AdminDashboard() {
 
   const [activeBuildingId, setActiveBuildingId] = React.useState<string>("");
 
+  // Solo un selector de mes compartido
   const [month, setMonth] = React.useState<string>(() => currentMonthValue());
-  const [filterMode, setFilterMode] = React.useState<FilterMode>("month");
-  const [rangeStartMonth, setRangeStartMonth] = React.useState<string>(() =>
-    currentMonthValue()
-  );
-  const [rangeEndMonth, setRangeEndMonth] = React.useState<string>(() =>
-    currentMonthValue()
-  );
-  const [year, setYear] = React.useState<number>(() =>
-    new Date().getFullYear()
-  );
 
-  const [metrics, setMetrics] = React.useState<BuildingDashboardMetrics | null>(
-    null
-  );
-  const [seriesPoints, setSeriesPoints] = React.useState<
-    Array<{ label: string; value: number }>
-  >([]);
+  const [apartmentsCount, setApartmentsCount] = React.useState<number>(0);
+  const [totalSchedulings, setTotalSchedulings] = React.useState<number>(0);
+  const [apartmentSchedulings, setApartmentSchedulings] = React.useState<ApartmentSchedulingCount[]>([]);
+  
   const [metricsLoading, setMetricsLoading] = React.useState(false);
   const [metricsError, setMetricsError] = React.useState<string | null>(null);
-
-  const yearOptions = React.useMemo(() => {
-    const current = new Date().getFullYear();
-    return [0, 1, 2, 3, 4].map((offset) => {
-      const y = String(current - offset);
-      return { value: y, label: y };
-    });
-  }, []);
-
-  const shouldUseLineChart = !metricsLoading && seriesPoints.length >= 7;
 
   const activeBuildingFromList = React.useMemo(() => {
     if (!activeBuildingId) return null;
@@ -130,8 +115,9 @@ export default function AdminDashboard() {
     let cancelled = false;
     async function run() {
       if (!selectedBuilding?.id) {
-        setMetrics(null);
-        setSeriesPoints([]);
+        setApartmentsCount(0);
+        setTotalSchedulings(0);
+        setApartmentSchedulings([]);
         setMetricsError(null);
         return;
       }
@@ -140,71 +126,38 @@ export default function AdminDashboard() {
       setMetricsError(null);
 
       try {
-        if (filterMode === "range" && rangeStartMonth > rangeEndMonth) {
-          setMetrics(null);
-          setSeriesPoints([]);
-          setMetricsError("El mes de inicio debe ser menor o igual al mes fin");
-          return;
-        }
-
-        const [apartmentsRes, monthlyRes] = await Promise.all([
+        const range = monthToUtcRange(month);
+        
+        const [apartmentsRes, schedulingsCountRes, apartmentSchedulingsRes] = await Promise.all([
           getApartmentsCountByBuildingId(selectedBuilding.id),
-          getSchedulingsMonthlyCounts(
-            filterMode === "year"
-              ? { buildingId: selectedBuilding.id, year }
-              : filterMode === "range"
-              ? {
-                  buildingId: selectedBuilding.id,
-                  startMonth: rangeStartMonth,
-                  endMonth: rangeEndMonth,
-                }
-              : {
-                  buildingId: selectedBuilding.id,
-                  startMonth: month,
-                  endMonth: month,
-                }
-          ),
+          getSchedulingsCountByBuildingIdAndRange({
+            buildingId: selectedBuilding.id,
+            startDatetime: range.startDatetime,
+            endDatetime: range.endDatetime,
+          }),
+          getSchedulingsByApartmentForMonth({
+            buildingId: selectedBuilding.id,
+            month: month,
+          }),
         ]);
 
         if (cancelled) return;
 
         if (!apartmentsRes.success) {
-          setMetrics(null);
-          setSeriesPoints([]);
-          setMetricsError(
-            apartmentsRes.message || "No se pudieron cargar las métricas"
-          );
+          setMetricsError(apartmentsRes.message || "No se pudieron cargar las métricas");
           return;
         }
 
-        if (!monthlyRes.success || !monthlyRes.data) {
-          setMetrics(null);
-          setSeriesPoints([]);
-          setMetricsError(
-            monthlyRes.message || "No se pudieron cargar las métricas"
-          );
+        if (!schedulingsCountRes.success) {
+          setMetricsError(schedulingsCountRes.message || "No se pudieron cargar los agendamientos");
           return;
         }
 
-        const points = monthlyRes.data.items.map((it) => ({
-          label: it.month,
-          value: it.count,
-        }));
-        const total = monthlyRes.data.items.reduce(
-          (acc, it) => acc + (it.count ?? 0),
-          0
-        );
-
-        setSeriesPoints(points);
-        setMetrics({
-          apartmentsCount: apartmentsRes.data ?? 0,
-          schedulingsCount: total,
-          range: monthlyRes.data.range,
-        });
+        setApartmentsCount(apartmentsRes.data ?? 0);
+        setTotalSchedulings(schedulingsCountRes.data ?? 0);
+        setApartmentSchedulings(apartmentSchedulingsRes.data ?? []);
       } catch {
         if (cancelled) return;
-        setMetrics(null);
-        setSeriesPoints([]);
         setMetricsError("No se pudieron cargar las métricas");
       } finally {
         if (cancelled) return;
@@ -216,14 +169,7 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [
-    selectedBuilding?.id,
-    month,
-    filterMode,
-    rangeStartMonth,
-    rangeEndMonth,
-    year,
-  ]);
+  }, [selectedBuilding?.id, month]);
 
   return (
     <Container className="py-8" constrained>
@@ -300,127 +246,112 @@ export default function AdminDashboard() {
 
       {!error && selectedBuilding ? (
         <div className="space-y-6">
-          <CoinsCard>
-            <CoinsCardHeader className="flex justify-between items-center">
-                <div className="w-min">
-                  {filterMode === "month" ? (
-                    <CoinsMonthPicker className="w-min" value={month} onChange={setMonth} />
-                  ) : filterMode === "range" ? (
-                    <div className="inline-flex items-end gap-3">
-                      <CoinsMonthPicker
-                        className="w-min"
-                        label="Desde"
-                        value={rangeStartMonth}
-                        onChange={setRangeStartMonth}
-                      />
-                      <CoinsMonthPicker
-                        className="w-min"
-                        label="Hasta"
-                        value={rangeEndMonth}
-                        onChange={setRangeEndMonth}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-min">
-                      <div className="text-muted-fg text-sm/6">Año</div>
-                      <div className="mt-1">
-                        <CoinsSelect
-                          className="w-fit"
-                          value={String(year)}
-                          onChange={(e) => setYear(Number(e.target.value))}
-                          options={yearOptions}
-                          placeholder="Año"
-                        />
-                      </div>
-                    </div>
-                  )}
+          {/* Selector de mes */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-semibold">Métricas del Edificio</h2>
+              <p className="text-sm text-muted-fg">
+                Visualiza los agendamientos y estadísticas del mes seleccionado
+              </p>
+            </div>
+            <CoinsMonthPicker className="w-min" value={month} onChange={setMonth} />
+          </div>
+
+          {metricsError ? (
+            <div className="text-sm/6 text-danger-subtle-fg rounded-md bg-danger/10 p-4">
+              {metricsError}
+            </div>
+          ) : null}
+
+          {/* Grid tipo Masonry */}
+          <div className="grid gap-4 auto-rows-auto sm:grid-cols-2 lg:grid-cols-3">
+            {/* Apartamentos */}
+            <CoinsCard>
+              <CoinsCardHeader
+                title="Apartamentos"
+                description="Total en el edificio"
+              />
+              <CoinsCardContent>
+                <div className="text-3xl font-semibold">
+                  {metricsLoading ? "—" : apartmentsCount}
                 </div>
-              <CoinsTabs
-                selectedKey={filterMode}
-                onSelectionChange={(key) =>
-                  setFilterMode(String(key) as FilterMode)
-                }
-                className="w-min"
-              >
-                <CoinsTabsList
-                  aria-label="Filtro"
-                  items={[
-                    { id: "month", label: "Mes" },
-                    { id: "range", label: "Rango" },
-                    { id: "year", label: "Año" },
-                  ]}
-                >
-                  {(item) => <CoinsTab id={item.id}>{item.label}</CoinsTab>}
-                </CoinsTabsList>
-              </CoinsTabs>
-            </CoinsCardHeader>
-            <CoinsCardContent className="space-y-4">
-              <div className="flex items-end gap-4 overflow-x-auto">
+              </CoinsCardContent>
+            </CoinsCard>
 
-                <div className="min-w-60 flex-1">
-                  {metricsError ? (
-                    <div className="text-sm/6 text-danger-subtle-fg">
-                      {metricsError}
-                    </div>
-                  ) : null}
+            {/* Agendamientos */}
+            <CoinsCard>
+              <CoinsCardHeader
+                title="Agendamientos"
+                description={`Total en ${month}`}
+              />
+              <CoinsCardContent>
+                <div className="text-3xl font-semibold">
+                  {metricsLoading ? "—" : totalSchedulings}
                 </div>
-              </div>
+              </CoinsCardContent>
+            </CoinsCard>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CoinsCard>
-                  <CoinsCardHeader
-                    title="Apartamentos"
-                    description="Cantidad total en el edificio"
+            {/* Distribución de Reservas (Pie) */}
+            <CoinsCard className="sm:col-span-2 lg:col-span-1 lg:row-span-2">
+              <CoinsCardHeader
+                title="Distribución"
+                description="% por apartamento"
+              />
+              <CoinsCardContent>
+                {metricsLoading ? (
+                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
+                    Cargando...
+                  </div>
+                ) : apartmentSchedulings.length === 0 ? (
+                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
+                    Sin agendamientos
+                  </div>
+                ) : (
+                  <CoinsPieChart
+                    items={apartmentSchedulings.slice(0, 10).map((item, idx) => ({
+                      name: item.apartmentName,
+                      value: item.count,
+                    }))}
+                    containerHeight={280}
+                    legendNameKey="name"
                   />
-                  <CoinsCardContent>
-                    <div className="text-3xl font-semibold">
-                      {metricsLoading ? "—" : metrics?.apartmentsCount ?? 0}
-                    </div>
-                  </CoinsCardContent>
-                </CoinsCard>
+                )}
+              </CoinsCardContent>
+            </CoinsCard>
 
-                <CoinsCard>
-                  <CoinsCardHeader
-                    title="Agendamientos"
-                    description="Total en el filtro seleccionado"
+            {/* Agendamientos por Apartamento (Barras) */}
+            <CoinsCard className="sm:col-span-2 lg:row-span-2 h-min">
+              <CoinsCardHeader
+                title="Por Apartamento"
+                description="Cantidad de reservas"
+              />
+              <CoinsCardContent className="h-min">
+                {metricsLoading ? (
+                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
+                    Cargando...
+                  </div>
+                ) : apartmentSchedulings.length === 0 ? (
+                  <div className="h-[280px] flex items-center justify-center text-muted-fg">
+                    Sin agendamientos
+                  </div>
+                ) : (
+                  <CoinsBarChart
+                    items={apartmentSchedulings.map((item, idx) => ({
+                      label: item.apartmentName,
+                      value: item.count,
+                      colorVar: `--chart-${(idx % 5) + 1}` as any,
+                    }))}
+                    maxValue={Math.max(...apartmentSchedulings.map(a => a.count))}
                   />
-                  <CoinsCardContent>
-                    <div className="text-3xl font-semibold">
-                      {metricsLoading ? "—" : metrics?.schedulingsCount ?? 0}
-                    </div>
-                  </CoinsCardContent>
-                </CoinsCard>
-              </div>
+                )}
+              </CoinsCardContent>
+            </CoinsCard>
 
-              <CoinsCard>
-                <CoinsCardHeader
-                  title="Agendamientos por mes"
-                  description="Serie mensual"
-                />
-                <CoinsCardContent>
-                  {shouldUseLineChart ? (
-                    <CoinsLineChart
-                      points={metricsLoading ? [] : seriesPoints}
-                      seriesLabel="Agendamientos"
-                      colorVar="--chart-1"
-                    />
-                  ) : (
-                    <CoinsBarSeriesChart
-                      points={metricsLoading ? [] : seriesPoints}
-                      seriesLabel="Agendamientos"
-                      colorVar="--chart-1"
-                    />
-                  )}
-                </CoinsCardContent>
-              </CoinsCard>
-            </CoinsCardContent>
-          </CoinsCard>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <CoinsCard className="lg:col-span-2">
+            {/* Detalles del Building */}
+            <CoinsCard className="sm:col-span-2 h-min">
               <CoinsCardHeader
                 title="Detalles"
-                description="Información general del building"
+                description="Información general"
               />
               <CoinsCardContent className="space-y-3">
                 <InfoRow
@@ -450,13 +381,9 @@ export default function AdminDashboard() {
                   value={selectedBuilding.staysId || "—"}
                 />
               </CoinsCardContent>
-              <CoinsCardFooter>
-                <div className="text-muted-fg text-xs/5">
-                  Tip: si cambias el building arriba, se actualiza la sesión.
-                </div>
-              </CoinsCardFooter>
             </CoinsCard>
 
+            {/* Conexión */}
             <CoinsCard>
               <CoinsCardHeader
                 title="Conexión"
