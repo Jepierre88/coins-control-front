@@ -22,6 +22,8 @@ import { CoinsSheet, CoinsSheetBody, CoinsSheetContent, CoinsSheetFooter, CoinsS
 import SchedulingQrDialog from "@/components/coins/agendamientos/scheduling-qr-dialog.component";
 
 import { useForm } from "react-hook-form";
+import Image from "next/image";
+import CoinsCircle from "@/public/img/coins-circle.png";
 
 type LeadFormValues = {
   name: string;
@@ -86,7 +88,7 @@ export default function Home() {
         {/* Header */}
         <header className="flex items-center justify-between py-8">
           <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-primary/15 ring-1 ring-primary/20" />
+            <Image src={CoinsCircle} alt="Coins Circle" width={40}/>
             <div className="leading-tight">
               <div className="flex items-center gap-2">
                 <div className="font-semibold">Coins Control</div>

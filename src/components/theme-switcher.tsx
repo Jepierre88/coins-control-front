@@ -4,17 +4,19 @@ import { Monitor, Moon, Sun } from "lucide-react"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { useTheme } from "@/components/theme-provider"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const themes = [
-  { key: "system", icon: Monitor, label: "System theme" },
-  { key: "light", icon: Sun, label: "Light theme" },
-  { key: "dark", icon: Moon, label: "Dark theme" },
+  { key: "system", icon: Monitor, label: "Tema del sistema" },
+  { key: "light", icon: Sun, label: "Tema claro" },
+  { key: "dark", icon: Moon, label: "Tema oscuro" },
 ] as const
 
 type ThemeKey = (typeof themes)[number]["key"]
 
 export const ThemeSwitcher = ({ className }: { className?: string }) => {
   const { theme, setTheme } = useTheme()
+  const isMobile = useIsMobile()
   const [mounted, setMounted] = useState(false)
 
   // Prevent hydration mismatches
@@ -23,6 +25,24 @@ export const ThemeSwitcher = ({ className }: { className?: string }) => {
   }, [])
 
   if (!mounted) return null
+
+  if (isMobile) {
+    const currentIndex = themes.findIndex((t) => t.key === theme)
+    const current = themes[currentIndex] ?? themes[0]
+    const next = themes[(currentIndex + 1 + themes.length) % themes.length] ?? themes[0]
+    const CurrentIcon = current.icon
+
+    return (
+      <button
+        type="button"
+        aria-label={`Tema actual: ${current.label}. Cambiar a ${next.label}`}
+        onClick={() => setTheme(next.key as ThemeKey)}
+        className={`relative isolate inline-flex h-8 w-8 items-center justify-center rounded-full bg-background ring-1 ring-border ${className ?? ""}`}
+      >
+        <CurrentIcon className="h-4 w-4 text-foreground" />
+      </button>
+    )
+  }
 
   return (
     <div

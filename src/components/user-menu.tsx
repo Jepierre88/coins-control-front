@@ -1,13 +1,5 @@
 "use client"
 
-import {
-  ArrowRightOnRectangleIcon,
-  Cog6ToothIcon,
-  CommandLineIcon,
-  LifebuoyIcon,
-  ShieldCheckIcon,
-  Squares2X2Icon,
-} from "@heroicons/react/24/outline"
 import { Avatar } from "@/components/ui/avatar"
 import {
   Menu,
@@ -15,7 +7,6 @@ import {
   MenuHeader,
   MenuItem,
   MenuSection,
-  MenuSeparator,
   MenuTrigger,
 } from "@/components/ui/menu"
 import { authClient } from "@/lib/auth-client"
@@ -32,6 +23,7 @@ export function UserMenu() {
 
   const sessionQuery = useSession()
   const user = sessionQuery.data?.user
+  const initials = (user?.name?.trim()?.charAt(0) || "U").toUpperCase()
 
   return (
     <Menu>
@@ -40,9 +32,9 @@ export function UserMenu() {
           alt={user?.name ?? "Usuario"}
           size="md"
           isSquare
-        >
-          {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
-        </Avatar>
+          initials={initials}
+          className="text-fg bg-muted-bg ring-1 ring-muted-fg/10"
+        />
       </MenuTrigger>
       <MenuContent placement="bottom right" className="min-w-60 sm:min-w-56">
         <MenuSection>

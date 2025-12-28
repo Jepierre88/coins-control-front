@@ -14,7 +14,7 @@ import {
   LoginSchema,
   LoginSchemaType,
 } from "@/core/forms/schemas/login-schema";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { handleLogin } from "@/lib/auth-utils";
@@ -23,6 +23,7 @@ import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const form = useForm<LoginSchemaType>({
     defaultValues: {
       identificationNumber: "",
@@ -39,13 +40,14 @@ export default function LoginPage() {
       });
 
       toast.success(res.message);
-      
-      // Navegar y forzar refresh completo para actualizar la sesión
-      router.push("/admin");
+
+      const next = searchParams.get("next");
+      const safeNext = next && next.startsWith("/") ? next : "/admin";
+
+      // Forzar navegación dura para asegurar cookies/sesión actualizadas en toda la app
+      router.push(safeNext);
       router.refresh();
-      
-      // Forzar reload de la ventana para asegurar que todo se actualice
-      window.location.href = "/admin";
+      window.location.assign(safeNext);
     } catch (error: unknown) {
       const actionError = error as ActionResponseEntity<unknown>;
       toast.error(actionError?.message || "Error al iniciar sesión");
