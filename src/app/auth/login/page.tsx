@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import CoinsCard, {
   CoinsCardContent,
   CoinsCardDescription,
@@ -19,7 +21,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { handleLogin } from "@/lib/auth-utils";
 import { ActionResponseEntity } from "@/types/action-response.entity";
-import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,6 +58,13 @@ export default function LoginPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-md">
+        <div className="mb-4 text-center">
+          <h1 className="text-balance text-2xl font-semibold tracking-tight">Accede a Coins Control</h1>
+          <p className="mt-1 text-sm text-muted-fg">
+            Entra para gestionar accesos, agendamientos y operación.
+          </p>
+        </div>
+
         <CoinsCard>
           <CoinsCardHeader title="Iniciar sesión">
             <CoinsCardDescription>
@@ -99,6 +107,16 @@ export default function LoginPage() {
             </CoinsForm>
           </CoinsCardContent>
         </CoinsCard>
+
+        <div className="mt-4 text-center text-xs text-muted-fg">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <Link href="/" className="underline underline-offset-4 hover:text-foreground">
+              Volver al inicio
+            </Link>
+            <span aria-hidden="true">·</span>
+            <span>¿Necesitas ayuda? Contacta al administrador.</span>
+          </div>
+        </div>
       </div>
     </main>
   );
