@@ -76,14 +76,7 @@ export default function Home() {
   );
 
   return (
-    <main className="relative min-h-screen bg-background text-fg overflow-hidden">
-      {/* Fondo sobrio */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -left-24 size-[360px] rounded-3xl bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-28 -right-28 size-[420px] rounded-3xl bg-primary/10 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklab,var(--color-primary)_10%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklab,var(--color-primary)_10%,transparent)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30" />
-      </div>
-
+    <main className="relative min-h-screen">
       <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <header className="flex items-center justify-between py-8">
@@ -98,12 +91,21 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2">
             <Link href="/auth/login">
               <CoinsButton variant="primary" startIcon={LogIn}>Iniciar sesión</CoinsButton>
             </Link>
           </div>
         </header>
+
+        {/* Mobile CTA: botón fijo abajo a la derecha */}
+        <div className="sm:hidden fixed bottom-4 right-4 z-50">
+          <Link href="/auth/login" aria-label="Iniciar sesión">
+            <CoinsButton variant="primary" startIcon={LogIn}>
+              Iniciar sesión
+            </CoinsButton>
+          </Link>
+        </div>
 
         {/* Hero */}
         <section className="grid grid-cols-1 gap-6 pb-10 pt-2 lg:grid-cols-2 lg:items-stretch">

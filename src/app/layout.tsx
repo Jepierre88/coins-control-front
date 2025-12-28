@@ -30,10 +30,21 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
-          <Toast />
-          {children}
-        </Providers>
+        <div className="relative min-h-dvh bg-background text-fg overflow-hidden">
+          {/* Fondo sobrio */}
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -top-24 -left-24 size-90 rounded-3xl bg-primary/10 blur-3xl" />
+            <div className="absolute -bottom-28 -right-28 size-105 rounded-3xl bg-primary/10 blur-3xl" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklab,var(--color-primary)_10%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklab,var(--color-primary)_10%,transparent)_1px,transparent_1px)] bg-size-[72px_72px] opacity-30" />
+          </div>
+
+          <div className="relative">
+            <Providers>
+              <Toast />
+              {children}
+            </Providers>
+          </div>
+        </div>
       </body>
     </html>
   )
