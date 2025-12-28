@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import CoinsButton from "@/components/coins/coins-button.component"
+import { Check, X } from "lucide-react"
 
 type DialogProviderProps = {
   children: React.ReactNode
@@ -79,10 +80,10 @@ function CoinsYesNoFooter({
 
   return (
     <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-      <CoinsButton variant="outline" onClick={handleNoClick} isLoading={isLoading === "no"}>
+      <CoinsButton variant="outline" onClick={handleNoClick} isLoading={isLoading === "no"} startIcon={X}>
         No
       </CoinsButton>
-      <CoinsButton variant="primary" onClick={handleYesClick} isLoading={isLoading === "yes"}>
+      <CoinsButton variant="primary" onClick={handleYesClick} isLoading={isLoading === "yes"} startIcon={Check}>
         Sí
       </CoinsButton>
     </div>

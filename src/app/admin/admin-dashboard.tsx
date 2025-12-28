@@ -208,8 +208,11 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <CoinsBuildingTabs onSelectedIdChange={setActiveBuildingId} />
-        </div>
+            <CoinsMonthPicker
+              className="w-min"
+              value={month}
+              onChange={setMonth}
+            />        </div>
       </div>
 
       <Separator className="my-6" />
@@ -268,27 +271,6 @@ export default function AdminDashboard() {
 
       {!error && selectedBuilding ? (
         <div className="space-y-6">
-          {/* Selector de mes */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-lg font-semibold">Métricas del Edificio</h2>
-              <p className="text-sm text-muted-fg">
-                Visualiza los agendamientos y estadísticas del mes seleccionado
-              </p>
-            </div>
-            <CoinsMonthPicker
-              className="w-min"
-              value={month}
-              onChange={setMonth}
-            />
-          </div>
-
-          {metricsError ? (
-            <div className="text-sm/6 text-danger-subtle-fg rounded-md bg-danger/10 p-4">
-              {metricsError}
-            </div>
-          ) : null}
-
           {/* Grid tipo Masonry */}
           <div className="grid gap-4 auto-rows-auto sm:grid-cols-2 lg:grid-cols-3">
 

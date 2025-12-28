@@ -10,7 +10,6 @@ import CoinsCard, {
   CoinsCardHeader,
 } from "@/components/coins/coins-card.component";
 import { CoinsTable, CoinsTableActions, type CoinsTableColumn } from "@/components/coins/coins-table.component";
-import CoinsBuildingTabs from "@/components/coins/coins-building-tabs.component";
 import { authClient } from "@/lib/auth-client";
 import { useLoading } from "@/context/loading.context";
 import {
@@ -22,6 +21,7 @@ import { Activity, DoorOpenIcon, X } from "lucide-react";
 import { UseDialogContext } from "@/context/dialog.context";
 import { toast } from "sonner";
 import CoinsRadialHoldButton from "@/components/coins/coins-radial-hold-button.component";
+import CoinsButton from "@/components/coins/coins-button.component";
 
 // Función temporal que simula abrir la puerta
 async function openDoorTemp(apartmentId: number | string): Promise<boolean> {
@@ -174,7 +174,7 @@ export default function ApartamentosView() {
   const actions: CoinsTableActions<ApartmentListItem> = {
     items: [
       {
-        label: "Abrir Puerta",
+        label: "Abrir",
         icon: DoorOpenIcon,
         id: "open-door",
         variantMobile: "primary",
@@ -186,6 +186,7 @@ export default function ApartamentosView() {
                 onConfirm={() => handleOpenDoor(row.id)}
               />
             ),
+            footer: <CoinsButton onClick={() => closeDialog()} className={"w-full"} startIcon={X} variant="secondary">Cerrar</CoinsButton>,
           })
       },
       {
@@ -229,10 +230,6 @@ export default function ApartamentosView() {
               ? "Gestiona los apartamentos del edificio seleccionado"
               : "Selecciona un edificio para ver sus apartamentos"}
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <CoinsBuildingTabs onSelectedIdChange={setActiveBuildingId} />
         </div>
       </div>
 

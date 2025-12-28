@@ -283,7 +283,7 @@ const renderCenterContent = () => {
 
 
   return (
-    <div className={["w-full h-full", className].join(" ")}>
+    <div className={["w-full h-full select-none", className].join(" ")}>
       <button
         ref={buttonRef}
         type="button"
